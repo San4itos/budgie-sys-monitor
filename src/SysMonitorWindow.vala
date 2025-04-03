@@ -4,30 +4,12 @@ namespace SysMonitor {
 
     public class SysMonitorWindow : Gtk.Window {
         private SysMonitor.Applet applet;
-        private string plugin_dir;
 
-        public SysMonitorWindow(SysMonitor.Applet parent, string plugin_dir) {
+        public SysMonitorWindow(SysMonitor.Applet parent, string plugin_dir, string initial_text) {
             this.applet = parent;
-            this.plugin_dir = plugin_dir;
             set_title("Sys Monitor");
             set_default_size(300, 150);
             set_position(Gtk.WindowPosition.CENTER);
-
-            // Завантажуємо стилі
-            var css_path = GLib.Path.build_filename(plugin_dir, "style.css");
-            if (FileUtils.test(css_path, FileTest.EXISTS)) {
-                var provider = new Gtk.CssProvider();
-                try {
-                    provider.load_from_path(css_path);
-                    Gtk.StyleContext.add_provider_for_screen(
-                        Gdk.Screen.get_default(),
-                        provider,
-                        Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
-                    );
-                } catch (Error e) {
-                    stderr.printf("Error loading CSS: %s\n", e.message);
-                }
-            }
 
             var box = new Gtk.Box(Gtk.Orientation.VERTICAL, 10);
             box.margin = 10;
@@ -35,6 +17,7 @@ namespace SysMonitor {
 
             var entry = new Gtk.Entry();
             entry.set_placeholder_text("Введіть текст...");
+            entry.set_text(initial_text); // Встановлюємо початковий текст із JSON
             box.pack_start(entry, false, false, 0);
 
             var button = new Gtk.Button.with_label("Зберегти");
