@@ -1,0 +1,7 @@
+[Plugin]
+Module=sysmonitor
+Name=Sys Monitor
+Description=A simple system monitor applet for Budgie
+Authors=San4itos
+Copyright=Copyright © 2025 San4itos
+Icon=utilities-system-monitor
