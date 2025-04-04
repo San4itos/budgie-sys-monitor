@@ -33,7 +33,7 @@ namespace SysMonitor {
         public SysMonitorWindow(SysMonitor.Applet parent, string plugin_dir, string initial_text, GenericArray<CommandData?> initial_commands, double initial_interval = 1.0) {
             Object(
                 window_position: Gtk.WindowPosition.CENTER,
-                default_width: 400,
+                default_width: 800,
                 // Трохи збільшимо висоту за замовчуванням
                 default_height: 450,
                 title: "Налаштування Sys Monitor" // Змінено заголовок
@@ -108,32 +108,40 @@ namespace SysMonitor {
                 add_empty_row();
             }
 
-            // --- Кнопка Зберегти ---
+            // --- Блок з кнопками "Зберегти" та "Закрити" ---
+            var action_box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
+            action_box.set_halign(Gtk.Align.CENTER);
+            main_box.pack_end(action_box, false, false, 0); // Додаємо в кінець головного боксу
+
+            // Кнопка ЗАКРИТИ
+            var close_button = new Gtk.Button.with_label("Закрити");
+            close_button.get_style_context().add_class(Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION);
+            // !!! ДОДАНО: Обробник для кнопки Закрити !!!
+            close_button.clicked.connect(() => {
+                this.destroy(); // Просто закриваємо вікно
+            });
+            action_box.pack_end(close_button, false, false, 0); // Додаємо справа
+
+            // Кнопка ЗБЕРЕГТИ
             var save_button = new Gtk.Button.with_label("Зберегти");
             save_button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION);
+             // !!! ЗМІНЕНО: Обробник кнопки Зберегти !!!
             save_button.clicked.connect(() => {
                 // Збираємо ТІЛЬКИ користувацькі команди з UI (підтверджені)
                 var commands_from_ui = new GenericArray<CommandData?>();
-                // !!! ЗМІНЕНО: Ітеруємо по custom_commands_box !!!
                 foreach (var child in custom_commands_box.get_children()) {
                     var row = child as Gtk.Box;
                     if (row == null) continue;
                     var children = row.get_children();
                     if (children.length() < 3) continue;
-
                     var tag_entry = children.nth_data(0) as Gtk.Entry;
                     var command_entry = children.nth_data(1) as Gtk.Entry;
                     var button = children.nth_data(2) as Gtk.Button;
-
                     if (tag_entry != null && command_entry != null && button != null &&
                         tag_entry.get_text() != null && tag_entry.get_text().length > 0 &&
-                        command_entry.get_text() != null && command_entry.get_text().length > 0)
-                    {
+                        command_entry.get_text() != null && command_entry.get_text().length > 0) {
                         if (button.get_label() == "-") {
-                             commands_from_ui.add(CommandData() {
-                                tag = tag_entry.get_text(),
-                                command = command_entry.get_text()
-                            });
+                             commands_from_ui.add(CommandData() { tag = tag_entry.get_text(), command = command_entry.get_text() });
                         }
                     }
                 }
@@ -147,18 +155,28 @@ namespace SysMonitor {
                 // Викликаємо оновлений метод Applet
                 applet.update_configuration(current_text, commands_from_ui, current_interval);
 
-                this.destroy();
-            });
-            // Додаємо кнопку в самий кінець головного контейнера
-            main_box.pack_end(save_button, false, false, 0); // Використовуємо pack_end
+                var original_label = save_button.get_label();
+                save_button.set_label("Збережено!");
+                save_button.set_sensitive(false); // Робимо неактивною на мить
+                Timeout.add(1500, () => { // Через 1.5 секунди
+                    if (save_button.get_window() != null) { // Перевірка, чи кнопка ще існує
+                         save_button.set_label(original_label);
+                         save_button.set_sensitive(true);
+                    }
+                    return Source.REMOVE;
+                });
 
+            });
+            action_box.pack_end(save_button, false, false, 0); // Додаємо зліва від кнопки "Закрити"
+
+
+            // --- Фінальне додавання та підключення сигналу ---
             add(main_box);
 
             this.destroy.connect (() => {
                 applet.on_settings_window_destroyed ();
             });
-        }
-
+        } // Кінець конструктора
         // --- Допоміжна функція для додавання рядка вбудованого тегу ---
         private void add_hardcoded_tag_row(Gtk.Box container, string tag, string description) {
             var row = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 5);

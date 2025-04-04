@@ -385,7 +385,22 @@ namespace SysMonitor {
                     processed_text = processed_text.replace("[CPU_FREQ]", freq_text);
                 }
 
-                // TODO: Додати обробку [MEM], [SWAP], [UPTIME], [LOAD] тут
+                // !!! ДОДАНО: Обробка [MEM] !!!
+                if (processed_text.contains("[MEM]")) {
+                    int mem_perc = SysInfo.get_mem_percentage(); // Статичний метод
+                    string mem_text = (mem_perc >= 0) ? mem_perc.to_string() + "%" : "[MEM ERR]";
+                    processed_text = processed_text.replace("[MEM]", mem_text);
+                }
+
+                // !!! ДОДАНО: Обробка [SWAP] !!!
+                if (processed_text.contains("[SWAP]")) {
+                    int swap_perc = SysInfo.get_swap_percentage(); // Статичний метод
+                    // Якщо swap = 0%, можливо, він просто вимкнений або не використовується
+                    string swap_text = (swap_perc >= 0) ? swap_perc.to_string() + "%" : "[SWAP ERR]";
+                    processed_text = processed_text.replace("[SWAP]", swap_text);
+                }
+
+                // TODO: Додати обробку [UPTIME], [LOAD] тут
                 // Приклад:
                 // if (processed_text.contains("[MEM]")) {
                 //    string mem_str = sys_info.get_memory_usage_string (); // Потрібно реалізувати метод

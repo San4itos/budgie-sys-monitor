@@ -1268,7 +1268,7 @@ namespace GTop {
     public static void get_fsusage (out GTop.FsUsage buf, string mount_dir);
     [CCode (cheader_filename = "glibtop.h", cname = "glibtop_get_loadavg")]
     public static void get_loadavg (out GTop.LoadAvg buf);
-    [CCode (cheader_filename = "glibtop.h", cname = "glibtop_get_mem")]
+    [CCode (cheader_filename = "glibtop/mem.h", cname = "glibtop_get_mem")]
     public static void get_mem (out GTop.Memory buf);
     [CCode (cheader_filename = "glibtop.h", cname = "glibtop_get_msg_limits")]
     public static void get_msg_limits (out GTop.MsgLimits buf);
@@ -1304,7 +1304,7 @@ namespace GTop {
     public static void get_sem_limits (out GTop.SemLimits buf);
     [CCode (cheader_filename = "glibtop.h", cname = "glibtop_get_shm_limits")]
     public static void get_shm_limits (out GTop.ShmLimits buf);
-    [CCode (cheader_filename = "glibtop.h", cname = "glibtop_get_swap")]
+    [CCode (cheader_filename = "glibtop/swap.h", cname = "glibtop_get_swap")]
     public static void get_swap (out GTop.Swap buf);
     [CCode (cheader_filename = "glibtop.h", cname = "glibtop_get_sysdeps")]
     public static void get_sysdeps (out GTop.SysDeps buf);
