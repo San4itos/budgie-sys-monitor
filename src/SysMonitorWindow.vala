@@ -18,7 +18,7 @@ namespace SysMonitor {
         }
 
         // Список вбудованих тегів
-        private static const HardcodedTagInfo[] hardcoded_tags = {
+        private const HardcodedTagInfo[] hardcoded_tags = {
             { "[CPU]",    "Відсоток використання ЦП (з libgtop)" },
             { "[MEM]",    "Використання пам'яті (Вик/Заг МБ, з libgtop)" }, // Потрібно буде додати в SysInfo
             { "[SWAP]",   "Використання Swap (Вик/Заг МБ, з libgtop)" },  // Потрібно буде додати в SysInfo

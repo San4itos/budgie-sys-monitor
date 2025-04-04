@@ -2,65 +2,90 @@ using GLib;
 using GTop;
 
 namespace SysMonitor {
-
     public class SysInfo : Object {
-        private float last_total_cpu_time = 0;
-        private float last_used_cpu_time = 0;
+        private static float last_total = 0.0f;
+        private static float last_used = 0.0f;
 
-        public int get_cpu_percentage() {
-            try {
-                var cpu_times = GTop.glibtop_cpu ();
+        [CCode (cname = "glibtop_init", cheader_filename = "glibtop/global.h")]
+        private static extern void gtop_init();
 
-                GTop.glibtop.get_cpu (cpu_times);
+        [CCode (cname = "glibtop_close", cheader_filename = "glibtop/global.h")]
+        private static extern void gtop_close();
 
-                // Тепер структура cpu_times заповнена даними, продовжуємо розрахунки
-                var current_used = (float)(cpu_times.user + cpu_times.nice + cpu_times.sys);
-                var current_total = (float)cpu_times.total;
-                var difference_used = current_used - this.last_used_cpu_time;
-                var difference_total = current_total - this.last_total_cpu_time;
+        public static int get_cpu_percentage() {
+            stdout.printf("Entering get_cpu_percentage\n");
+            gtop_init();
+            stdout.printf("libgtop initialized\n");
 
-                this.last_used_cpu_time = current_used;
-                this.last_total_cpu_time = current_total;
+            GTop.Cpu cpu_times = GTop.Cpu();
+            stdout.printf("Before GTop.get_cpu\n");
+            GTop.get_cpu(out cpu_times);
+            stdout.printf("After GTop.get_cpu\n");
 
-                double usage_ratio_double = 0.0;
-                if (difference_total > 0) {
-                    usage_ratio_double = (double)difference_used / (double)difference_total;
-                } else {
-                    return 0;
-                }
+            stdout.printf("CPU Raw Data: User=%llu, Nice=%llu, Sys=%llu, Total=%llu\n", 
+                          cpu_times.user, cpu_times.nice, cpu_times.sys, cpu_times.total);
 
-                // Тимчасова заміна GLib.Math
-                if (usage_ratio_double < 0.0) { usage_ratio_double = 0.0; }
-                if (usage_ratio_double > 1.0) { usage_ratio_double = 1.0; }
-                int percentage = (int)(usage_ratio_double * 100.0 + 0.5);
-                return percentage;
-
-            } catch (Error e) {
-                printerr("Error in get_cpu_percentage() using libgtop: %s\n", e.message);
-                return -1;
+            if (cpu_times.user == 0 && cpu_times.nice == 0 && cpu_times.sys == 0 && cpu_times.total == 0) {
+                stdout.printf("WARNING: All CPU values are 0!\n");
             }
+
+            var used = cpu_times.user + cpu_times.nice + cpu_times.sys;
+            var difference_used = (float)used - last_used;
+            var difference_total = (float)cpu_times.total - last_total;
+
+            last_used = (float)used;
+            last_total = (float)cpu_times.total;
+
+            if (difference_total <= 0.0f) {
+                stdout.printf("CPU Calc Warning: difference_total <= 0 (%.2f), returning 0\n", difference_total);
+                return 0;
+            }
+
+            var pre_percentage = difference_used.abs() / difference_total.abs();
+            if (pre_percentage < 0.0f) pre_percentage = 0.0f;
+            if (pre_percentage > 1.0f) pre_percentage = 1.0f;
+
+            int percentage = (int)Math.round(pre_percentage * 100.0f);
+
+            stdout.printf("CPU Calc: DiffT=%.2f, DiffU=%.2f, Ratio=%.4f, Perc=%d\n",
+                          difference_total, difference_used, pre_percentage, percentage);
+
+            return percentage;
         }
 
-        // Функція get_num_processors вже використовує правильний підхід (отримує вказівник)
-        private uint64 get_num_processors() {
-             try {
-                 unowned GTop.glibtop_sysinfo? sysinfo_ptr = GTop.glibtop.get_sysinfo ();
-                 if (sysinfo_ptr != null) {
-                     return sysinfo_ptr.ncpu;
-                 } else {
-                     printerr("Error in get_num_processors(): GTop.glibtop.get_sysinfo() returned null\n");
-                     return 1;
-                 }
+        static construct {
+            gtop_init();
+            stdout.printf("GTop initialized via static construct\n");
+        }
+
+        public SysInfo() {
+            stdout.printf("SysInfo instance created\n");
+        }
+
+        ~SysInfo() {
+            stdout.printf("SysInfo instance destroyed\n");
+            gtop_close();
+        }
+
+        public uint64 get_num_processors() {
+            try {
+                unowned GTop.SysInfo? sysinfo_ptr = GTop.glibtop_get_sysinfo();
+                if (sysinfo_ptr != null) {
+                    stdout.printf("Number of CPUs detected: %llu\n", sysinfo_ptr.ncpu);
+                    return sysinfo_ptr.ncpu + 1;
+                } else {
+                    printerr("Error in get_num_processors(): GTop.glibtop_get_sysinfo() returned null\n");
+                    return 1;
+                }
             } catch (Error e) {
                 printerr("Error in get_num_processors() calling libgtop: %s\n", e.message);
                 return 1;
             }
         }
 
-        // Метод для частоти CPU (без змін)
         public double get_cpu_frequency_khz() {
-           double max_freq_khz = 0.0;
-            uint64 num_cpus = get_num_processors();
+            double max_freq_khz = 0.0;
+            uint64 num_cpus = this.get_num_processors();
             if (num_cpus == 0) return 0.0;
 
             int num_cpus_int = (int)num_cpus;
@@ -76,30 +101,29 @@ namespace SysMonitor {
                             max_freq_khz = freq_khz;
                         }
                     }
-                } catch (Error e) { /* Ігноруємо помилку для одного ядра */ }
+                } catch (Error e) { /* Ignore */ }
             }
 
-            // Резервний варіант через /proc/cpuinfo
             if (max_freq_khz == 0.0) {
-                 var cpuinfo_path = "/proc/cpuinfo";
-                 try {
-                     string contents;
-                     if (FileUtils.get_contents(cpuinfo_path, out contents)) {
-                         foreach (var line in contents.split("\n")) {
-                             if (line.has_prefix("cpu MHz")) {
-                                 var parts = line.split(":");
-                                 if (parts.length == 2) {
-                                     max_freq_khz = double.parse(parts[1].strip()) * 1000.0; // MHz в KHz
-                                     break;
-                                 }
-                             }
-                         }
-                     }
-                 } catch (Error e) {
-                     printerr("Error reading %s: %s\n", cpuinfo_path, e.message);
-                 }
+                var cpuinfo_path = "/proc/cpuinfo";
+                try {
+                    string contents;
+                    if (FileUtils.get_contents(cpuinfo_path, out contents)) {
+                        foreach (var line in contents.split("\n")) {
+                            if (line.has_prefix("cpu MHz")) {
+                                var parts = line.split(":");
+                                if (parts.length == 2) {
+                                    max_freq_khz = double.parse(parts[1].strip()) * 1000.0;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                } catch (Error e) {
+                    printerr("Error reading %s: %s\n", cpuinfo_path, e.message);
+                }
             }
             return max_freq_khz;
         }
-    } // Кінець класу SysInfo
-} // Кінець namespace
+    }
+}
