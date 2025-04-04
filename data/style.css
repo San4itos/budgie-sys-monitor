@@ -4,6 +4,6 @@
 }
 
 /* Стиль для невалідного тегу */
-.empty-entry {
+.error {
     border: 2px solid red;
 }
