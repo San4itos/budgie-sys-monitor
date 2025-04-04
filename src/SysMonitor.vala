@@ -23,7 +23,6 @@ namespace SysMonitor {
             label = new Gtk.Label(load_text_from_json());
             widget.add(label);
 
-            // Завантажуємо CSS один раз тут
             var css_path = GLib.Path.build_filename(plugin_dir, "style.css");
             if (FileUtils.test(css_path, FileTest.EXISTS)) {
                 var provider = new Gtk.CssProvider();
@@ -50,7 +49,8 @@ namespace SysMonitor {
                 return Gdk.EVENT_PROPAGATE;
             }
 
-            var dialog = new SysMonitorWindow(this, plugin_dir, load_text_from_json()); // Передаємо поточний текст
+            var commands = load_commands_from_json();
+            var dialog = new SysMonitorWindow(this, plugin_dir, load_text_from_json(), commands);
             dialog.show_all();
 
             return Gdk.EVENT_STOP;
@@ -58,7 +58,12 @@ namespace SysMonitor {
 
         public void update_label(string new_text) {
             label.set_text(new_text);
-            save_text_to_json(new_text);
+            save_text_to_json(new_text, new GenericArray<CommandData?>());
+        }
+
+        public void update_label_with_commands(string new_text, GenericArray<CommandData?> commands) {
+            label.set_text(new_text);
+            save_text_to_json(new_text, commands);
         }
 
         private string get_plugin_dir() {
@@ -95,7 +100,7 @@ namespace SysMonitor {
         private string load_text_from_json() {
             var json_path = GLib.Path.build_filename(config_dir, "config.json");
             if (!FileUtils.test(json_path, FileTest.EXISTS)) {
-                save_text_to_json("Hello, World!");
+                save_text_to_json("Hello, World!", new GenericArray<CommandData?>());
                 return "Hello, World!";
             }
 
@@ -112,7 +117,38 @@ namespace SysMonitor {
             }
         }
 
-        private void save_text_to_json(string text) {
+        private GenericArray<CommandData?> load_commands_from_json() {
+            var json_path = GLib.Path.build_filename(config_dir, "config.json");
+            var commands = new GenericArray<CommandData?>();
+
+            if (!FileUtils.test(json_path, FileTest.EXISTS)) {
+                return commands;
+            }
+
+            try {
+                string contents;
+                FileUtils.get_contents(json_path, out contents);
+                Json.Parser parser = new Json.Parser();
+                parser.load_from_data(contents);
+                var root = parser.get_root().get_object();
+                var commands_array = root.get_array_member("commands");
+
+                if (commands_array != null) {
+                    for (int i = 0; i < commands_array.get_length(); i++) {
+                        var cmd_obj = commands_array.get_object_element(i);
+                        commands.add(CommandData() {
+                            tag = cmd_obj.get_string_member("tag"),
+                            command = cmd_obj.get_string_member("command")
+                        });
+                    }
+                }
+            } catch (Error e) {
+                stderr.printf("Error loading commands from JSON: %s\n", e.message);
+            }
+            return commands;
+        }
+
+        private void save_text_to_json(string text, GenericArray<CommandData?> commands) {
             var json_path = GLib.Path.build_filename(config_dir, "config.json");
             string json_data = "";
 
@@ -121,6 +157,22 @@ namespace SysMonitor {
                 builder.begin_object();
                 builder.set_member_name("text");
                 builder.add_string_value(text);
+
+                builder.set_member_name("commands");
+                builder.begin_array();
+                for (int i = 0; i < commands.length; i++) {
+                    var cmd = commands[i];
+                    if (cmd != null) {
+                        builder.begin_object();
+                        builder.set_member_name("tag");
+                        builder.add_string_value(cmd.tag);
+                        builder.set_member_name("command");
+                        builder.add_string_value(cmd.command);
+                        builder.end_object();
+                    }
+                }
+                builder.end_array();
+
                 builder.end_object();
 
                 var generator = new Json.Generator();
@@ -133,8 +185,14 @@ namespace SysMonitor {
             }
         }
     }
+
+    public struct CommandData {
+        public string tag;
+        public string command;
+    }
 }
 
+// Додаємо коректну ініціалізацію для libpeas
 [ModuleInit]
 public void peas_register_types(TypeModule module) {
     var objmodule = module as Peas.ObjectModule;
