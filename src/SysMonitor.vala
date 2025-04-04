@@ -221,7 +221,6 @@ namespace SysMonitor {
          }
         private string get_config_dir() {
              string primary_path = plugin_dir;
-            string config_path = GLib.Path.build_filename(primary_path, "config.json");
              var primary_dir_file = File.new_for_path(primary_path);
             try {
                 var test_file = primary_dir_file.get_child("write_test.tmp");
