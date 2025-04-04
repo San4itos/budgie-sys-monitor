@@ -263,12 +263,19 @@ namespace SysMonitor {
                 return Source.CONTINUE;
             });
         }
-       private void update_label_content() {
+        private void update_label_content() {
+            stdout.printf("--- update_label_content called ---\n"); // Початок виконання
             string processed_text = this.template_text;
+            stdout.printf("  Template: '%s'\n", processed_text);
+
+            if (this.current_commands.length == 0) {
+                 stdout.printf("  No commands configured.\n");
+            }
 
             foreach (var cmd_data in this.current_commands) {
                  if (cmd_data == null || cmd_data.tag == null || cmd_data.command == null
                     || cmd_data.tag.length == 0 || cmd_data.command.length == 0) {
+                    stdout.printf("  Skipping invalid command data.\n");
                     continue;
                 }
 
@@ -276,53 +283,71 @@ namespace SysMonitor {
                 string command_str = cmd_data.command;
                 string replacement_text = "";
 
+                stdout.printf("  Processing Tag: '%s', Command: '%s'\n", tag, command_str);
+
+                // Перевіряємо, чи текст ВЖЕ містить тег ПЕРЕД заміною
                 if (!processed_text.contains(tag)) {
+                    stdout.printf("  Tag '%s' not found in current processed text. Skipping command execution.\n", tag);
                     continue;
                 }
 
                 try {
-                    string[] argv = {};
-                    if (!GLib.Shell.parse_argv(command_str, out argv)) {
-                        throw new Error(Quark.from_string("SHELL"), 1, "Failed to parse command: " + command_str);
-                    }
+                    string[] shell_argv = {"/bin/sh", "-c", command_str};
 
                     string standard_output;
                     string standard_error;
                     int exit_status;
 
-                    GLib.Process.spawn_sync(
-                        null, argv, null, GLib.SpawnFlags.SEARCH_PATH, null,
-                        out standard_output, out standard_error, out exit_status
-                    );
+                    stdout.printf("    Spawning: /bin/sh -c \"%s\"\n", command_str);
+                    GLib.Process.spawn_sync( null, shell_argv, null, 0, null,
+                        out standard_output, out standard_error, out exit_status );
+
+                    // Виводимо результат незалежно від успіху
+                    stdout.printf("    Exit Status: %d\n", exit_status);
+                    stdout.printf("    Raw Stdout: '%s'\n", standard_output ?? "<null>"); // Використовуємо ?? для обробки null
+                    stdout.printf("    Raw Stderr: '%s'\n", standard_error ?? "<null>"); // Використовуємо ?? для обробки null
 
                     if (exit_status != 0) {
                         replacement_text = "[ERR:%d]".printf(exit_status);
-                        if (standard_error != null) { stderr.printf("Cmd '%s' err (exit %d): %s\n", command_str, exit_status, standard_error); }
-                        else { stderr.printf("Cmd '%s' failed with exit %d\n", command_str, exit_status); }
+                        if (standard_error != null && standard_error.length > 0) {
+                             stderr.printf("    Shell/Cmd '%s' err (exit %d): %s\n", command_str, exit_status, standard_error.strip());
+                        } else {
+                             stderr.printf("    Shell/Cmd '%s' failed with exit %d (no stderr)\n", command_str, exit_status);
+                        }
                     } else if (standard_output != null) {
                         replacement_text = standard_output.strip();
+                         stdout.printf("    Using stripped stdout for replacement: '%s'\n", replacement_text);
                     } else {
-                        replacement_text = "";
+                        replacement_text = ""; // Успіх, але виводу немає
+                         stdout.printf("    Command succeeded but stdout was null. Replacing with empty string.\n");
                     }
 
                 } catch (SpawnError e) {
-                     stderr.printf("Failed to spawn cmd '%s': %s\n", command_str, e.message);
+                     stderr.printf("    Failed to spawn shell for cmd '%s': %s\n", command_str, e.message);
                      replacement_text = "[SPAWN ERR]";
                 } catch (Error e) {
-                     stderr.printf("Error processing cmd '%s': %s\n", command_str, e.message);
+                     stderr.printf("    Error processing cmd '%s': %s\n", command_str, e.message);
                      replacement_text = "[PROC ERR]";
                 }
 
+                stdout.printf("    Replacing '%s' with '%s'\n", tag, replacement_text);
                 processed_text = processed_text.replace(tag, replacement_text);
-            }
+                stdout.printf("    Text after replace: '%s'\n", processed_text);
+
+            } // Кінець foreach
+
+            stdout.printf("  Final text before Idle.add: '%s'\n", processed_text);
 
             Idle.add(() => {
+                 stdout.printf("    Idle.add: Setting label text (destroyed=%s)\n", is_destroyed.to_string());
                 if (!is_destroyed) {
                     label.set_text(processed_text);
                 }
                 return Source.REMOVE;
             });
+             stdout.printf("--- update_label_content finished ---\n"); // Кінець виконання
         }
+
          public override void destroy () {
             this.is_destroyed = true;
             if (timer_id > 0) {
