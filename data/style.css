@@ -25,9 +25,6 @@
 }
 
 .error {
-    /* ВИДАЛЕНО: Статична рамка більше не потрібна */
-    /* border: 1px solid red; */
-
     /* Зберігаємо заокруглення, якщо потрібно */
     border-radius: 3px;
 
@@ -36,15 +33,6 @@
     animation-duration: 1s;           /* Тривалість: 1 секунда */
     animation-timing-function: ease-out; /* Плавне згасання */
     animation-iteration-count: 1;       /* Відтворити анімацію лише один раз */
-    /* animation-fill-mode: forwards; */ /* Не потрібно, бо кінцевий стан - без тіні */
-
-    /* Важливо: Переконайтесь, що базовий стиль Gtk.Entry не має */
-    /* власного box-shadow або border, який може конфліктувати. */
-    /* Якщо GTK тема додає рамку за замовчуванням, можливо, */
-    /* доведеться її скинути в базовому стилі або тут: */
-    /* border-style: solid; */
-    /* border-width: 1px; */
-    /* border-color: transparent; */ /* Робимо стандартну рамку прозорою на час анімації, якщо вона є */
 }
 
 /* GTK standard classes like .suggested-action and .destructive-action */
