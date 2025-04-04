@@ -1,9 +1,51 @@
-/* Стилі для діалогового вікна */
+/* style.css */
+
 .dialog-box {
     padding: 10px;
 }
 
-/* Стиль для невалідного тегу */
-.error {
-    border: 2px solid red;
+/* --- Анімація світіння --- */
+@keyframes glow-error {
+  0% {
+    /* Початковий стан: немає світіння */
+    box-shadow: 0 0 0 0 rgba(255, 0, 0, 0.7);
+    /* Можна також задати початковий колір рамки, якщо вона є */
+    /* border-color: initial; */
+  }
+  50% {
+    /* Середина анімації: максимальне світіння */
+    box-shadow: 0 0 8px 3px rgba(255, 0, 0, 0.7); /* червоне світіння */
+    /* border-color: rgba(255, 0, 0, 0.8); */
+  }
+  100% {
+    /* Кінцевий стан: світіння зникає */
+    box-shadow: 0 0 0 0 rgba(255, 0, 0, 0);
+    /* border-color: initial; */
+  }
 }
+
+.error {
+    /* ВИДАЛЕНО: Статична рамка більше не потрібна */
+    /* border: 1px solid red; */
+
+    /* Зберігаємо заокруглення, якщо потрібно */
+    border-radius: 3px;
+
+    /* Застосовуємо анімацію */
+    animation-name: glow-error;          /* Назва анімації з @keyframes */
+    animation-duration: 1s;           /* Тривалість: 1 секунда */
+    animation-timing-function: ease-out; /* Плавне згасання */
+    animation-iteration-count: 1;       /* Відтворити анімацію лише один раз */
+    /* animation-fill-mode: forwards; */ /* Не потрібно, бо кінцевий стан - без тіні */
+
+    /* Важливо: Переконайтесь, що базовий стиль Gtk.Entry не має */
+    /* власного box-shadow або border, який може конфліктувати. */
+    /* Якщо GTK тема додає рамку за замовчуванням, можливо, */
+    /* доведеться її скинути в базовому стилі або тут: */
+    /* border-style: solid; */
+    /* border-width: 1px; */
+    /* border-color: transparent; */ /* Робимо стандартну рамку прозорою на час анімації, якщо вона є */
+}
+
+/* GTK standard classes like .suggested-action and .destructive-action */
+/* are usually styled by the active GTK theme. */
