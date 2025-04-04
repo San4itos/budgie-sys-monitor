@@ -88,7 +88,6 @@ namespace SysMonitor {
             }
         }
 
-        // !!! НОВИЙ СТАТИЧНИЙ МЕТОД для SWAP % !!!
         // Потребує cheader_filename, якщо його немає у VAPI для get_swap/Swap
         [CCode(cheader_filename="glibtop/swap.h")]
         public static int get_swap_percentage() {
@@ -131,7 +130,7 @@ namespace SysMonitor {
              try {
                  unowned GTop.SysInfo? sysinfo_ptr = GTop.glibtop_get_sysinfo ();
                  if (sysinfo_ptr != null) {
-                     return sysinfo_ptr.ncpu; // Повертаємо значення без +1
+                     return sysinfo_ptr.ncpu;
                  } else {
                      printerr("Error in get_num_processors(): GTop.glibtop_get_sysinfo() returned null\n");
                      return 1;
@@ -143,49 +142,93 @@ namespace SysMonitor {
         }
 
         public double get_cpu_frequency_khz() {
-            double max_freq_khz = 0.0;
-            uint64 num_cpus = this.get_num_processors(); // Викликаємо метод, який тепер логує
-
+            double total_freq_khz = 0.0;
+            uint64 num_cpus = this.get_num_processors(); // Отримуємо кількість логічних CPU
             if (num_cpus == 0) return 0.0;
 
             int num_cpus_int = (int)num_cpus;
             if (num_cpus_int < 1) num_cpus_int = 1;
 
+            int valid_cores_found = 0; // Лічильник ядер, для яких вдалося прочитати частоту
+
+            // Перебираємо всі логічні процесори
             for (int i = 0; i < num_cpus_int; i++) {
-                var cpuinfo_path = "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_max_freq".printf(i);
+                // Шлях до файлу поточної частоти для ядра 'i'
+                var cpuinfo_path = "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_cur_freq".printf(i);
                 try {
                     string contents;
                     if (FileUtils.get_contents(cpuinfo_path, out contents)) {
+                        // Парсимо частоту (вона вже в KHz)
                         double freq_khz = double.parse(contents.strip());
-                        if (freq_khz > max_freq_khz) {
-                            max_freq_khz = freq_khz;
-                        }
+                        total_freq_khz += freq_khz; // Додаємо до суми
+                        valid_cores_found++;      // Збільшуємо лічильник успішних читань
                     }
-                } catch (Error e) { /* Ignore */ }
+                    // Якщо файл не знайдено для ядра, просто пропускаємо його
+                } catch (Error e) {
+                    // Можна додати лог помилки читання для конкретного ядра, якщо потрібно
+                    // printerr("Warning: Could not read scaling_cur_freq for cpu%d: %s\n", i, e.message);
+                }
             }
 
-            if (max_freq_khz == 0.0) {
-                var cpuinfo_path = "/proc/cpuinfo";
-                 try {
-                     string contents;
-                     if (FileUtils.get_contents(cpuinfo_path, out contents)) {
-                         foreach (var line in contents.split("\n")) {
-                             if (line.has_prefix("cpu MHz")) {
-                                 var parts = line.split(":");
-                                 if (parts.length == 2) {
-                                     max_freq_khz = double.parse(parts[1].strip()) * 1000.0;
-                                     break;
+            // Розраховуємо середнє, якщо вдалося прочитати хоча б для одного ядра
+            if (valid_cores_found > 0) {
+                double average_freq_khz = total_freq_khz / valid_cores_found;
+                 // Лог для відладки (можна потім прибрати)
+                 // stdout.printf("SysInfo: get_cpu_frequency_khz() calculated average freq = %.0f KHz from %d cores\n", average_freq_khz, valid_cores_found);
+                return average_freq_khz;
+            } else {
+                // Якщо не вдалося прочитати жодного файлу з /sys, спробуємо резервний /proc/cpuinfo
+                 // printerr("SysInfo: Could not read scaling_cur_freq from any core. Falling back to /proc/cpuinfo.\n");
+                 // Викликаємо допоміжний метод (який ми визначали раніше)
+                 return read_freq_from_proc_cpuinfo();
+            }
+        }
+
+        // Допоміжний метод для читання з /proc/cpuinfo (залишається корисним як резервний)
+        private double read_freq_from_proc_cpuinfo() {
+            double total_mhz = 0.0;     // Сума частот в MHz
+            int core_count = 0;         // Кількість знайдених значень
+            var cpuinfo_path = "/proc/cpuinfo";
+
+             try {
+                 string contents;
+                 if (FileUtils.get_contents(cpuinfo_path, out contents)) {
+                     // Перебираємо всі рядки у файлі
+                     foreach (var line in contents.split("\n")) {
+                         // Шукаємо рядки, що містять частоту
+                         if (line.has_prefix("cpu MHz")) {
+                             var parts = line.split(":");
+                             if (parts.length == 2) {
+                                 try {
+                                     // Парсимо значення MHz і додаємо до суми
+                                     total_mhz += double.parse(parts[1].strip());
+                                     core_count++; // Збільшуємо лічильник ядер
+                                 } catch (Error parse_err) {
+                                     // Ігноруємо помилки парсингу для окремого рядка
+                                      printerr("Warning: Could not parse MHz value in line: %s\n", line);
                                  }
                              }
                          }
-                     }
-                 } catch (Error e) {
-                     printerr("Error reading %s: %s\n", cpuinfo_path, e.message);
+                     } // кінець foreach
+                 } else {
+                      printerr("Error: Could not read contents of %s\n", cpuinfo_path);
                  }
-            }
+             } catch (Error e) {
+                 printerr("Error reading %s: %s\n", cpuinfo_path, e.message);
+                 return 0.0; // Повертаємо 0 при помилці читання файлу
+             }
 
-            return max_freq_khz;
-        }
+             // Розраховуємо середнє і переводимо в KHz
+             if (core_count > 0) {
+                 double average_khz = (total_mhz / core_count) * 1000.0;
+                 // stdout.printf("SysInfo: read_freq_from_proc_cpuinfo() calculated average = %.0f KHz from %d cores\n", average_khz, core_count);
+                 return average_khz;
+             } else {
+                 // stdout.printf("SysInfo: read_freq_from_proc_cpuinfo() did not find any 'cpu MHz' lines.\n");
+                 return 0.0; // Повертаємо 0, якщо не знайдено жодного значення
+             }
+        } // Кінець read_freq_from_proc_cpuinfo
+
 
     } // Кінець класу SysInfo
 } // Кінець namespace SysMonitor

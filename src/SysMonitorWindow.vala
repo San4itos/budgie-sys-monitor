@@ -20,10 +20,8 @@ namespace SysMonitor {
         // Список вбудованих тегів
         private const HardcodedTagInfo[] hardcoded_tags = {
             { "[CPU]",    "Відсоток використання ЦП (з libgtop)" },
-            { "[MEM]",    "Використання пам'яті (Вик/Заг МБ, з libgtop)" }, // Потрібно буде додати в SysInfo
-            { "[SWAP]",   "Використання Swap (Вик/Заг МБ, з libgtop)" },  // Потрібно буде додати в SysInfo
-            { "[UPTIME]", "Час роботи системи (з libgtop)" },           // Потрібно буде додати в SysInfo
-            { "[LOAD]",   "Середнє навантаження (1хв, з libgtop)" },   // Потрібно буде додати в SysInfo
+            { "[MEM]",    "Використання пам'яті (%, з libgtop)" }, // Потрібно буде додати в SysInfo
+            { "[SWAP]",   "Використання Swap (%, з libgtop)" },  // Потрібно буде додати в SysInfo
             { "[CPU_FREQ]", "Макс. частота ЦП (ГГц, з /sys)" }
             // Додавай сюди інші за потреби
         };
@@ -223,14 +221,15 @@ namespace SysMonitor {
             var row = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 5);
 
             var tag_entry = new Gtk.Entry();
-            tag_entry.set_placeholder_text("Тег ([tag])");
+            tag_entry.set_placeholder_text("[Тег]");
             // Зробимо трохи ширшим для узгодження з вбудованими
-            tag_entry.set_width_chars(12);
+            tag_entry.set_width_chars(10);
             tag_entry.set_tooltip_text("Унікальний тег у форматі [my_tag]");
             row.pack_start(tag_entry, false, false, 0);
             tag_entry.set_text(tag);
 
             var command_entry = new Gtk.Entry();
+            command_entry.set_tooltip_text("Команда оболонки, наприклад: date '+%H:%M:%S'");
             command_entry.set_placeholder_text("Команда оболонки (shell)");
             command_entry.hexpand = true;
             command_entry.set_text(command);
