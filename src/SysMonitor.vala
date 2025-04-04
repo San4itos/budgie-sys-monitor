@@ -32,7 +32,9 @@ namespace SysMonitor {
         private string template_text = "...";
         private GenericArray<CommandData?> current_commands = new GenericArray<CommandData?>();
         private bool is_destroyed = false;
-
+        private SysMonitorWindow? settings_window = null;
+        // Клас SysInfo (приклад, якщо він використовується)
+        private SysInfo sys_info = new SysInfo(); // Створюємо екземпляр
 
         // ... (конструктор, on_button_press без змін) ...
         public Applet(string uuid) {
@@ -66,17 +68,41 @@ namespace SysMonitor {
             this.show_all();
         }
 
+        // !!! ЗМІНЕНО: Логіка обробника натискання !!!
         private bool on_button_press(Gtk.Widget widget, Gdk.EventButton event) {
             if (event.button != 1) {
                 return Gdk.EVENT_PROPAGATE;
             }
-            // Передаємо поточні збережені дані
-            var dialog = new SysMonitorWindow(this, plugin_dir, this.template_text, this.current_commands, this.current_interval);
-            dialog.show_all();
-            return Gdk.EVENT_STOP;
+
+            // Перевіряємо, чи вікно вже існує
+            if (this.settings_window != null) {
+                // Якщо так, виводимо його на передній план
+                stdout.printf("Settings window already open. Presenting.\n");
+                this.settings_window.present();
+            } else {
+                // Якщо ні, створюємо нове вікно
+                stdout.printf("No settings window found. Creating new.\n");
+                // Створюємо та зберігаємо посилання
+                this.settings_window = new SysMonitorWindow(
+                    this, // Передаємо посилання на цей Applet
+                    plugin_dir,
+                    this.template_text,
+                    this.current_commands,
+                    this.current_interval
+                );
+                // Показуємо вікно
+                this.settings_window.show_all();
+            }
+
+            return Gdk.EVENT_STOP; // Зупиняємо подальшу обробку події
         }
 
-        // <<< ЗМІНЕНО: Перейменовано та виправлено логіку оновлення команд >>>
+        // !!! ДОДАНО: Метод, який викликається вікном при його закритті !!!
+        public void on_settings_window_destroyed() {
+            stdout.printf("Settings window destroyed signal received. Clearing reference.\n");
+            this.settings_window = null; // Скидаємо посилання
+        }
+
         // Цей метод тепер приймає повний стан з UI і оновлює внутрішній стан Applet
         public void update_configuration(string new_text, GenericArray<CommandData?> commands_from_ui, double new_interval) {
             // 1. Оновлюємо текст та інтервал
@@ -338,20 +364,25 @@ namespace SysMonitor {
             stdout.printf("  Final text before Idle.add: '%s'\n", processed_text);
 
             Idle.add(() => {
-                 stdout.printf("    Idle.add: Setting label text (destroyed=%s)\n", is_destroyed.to_string());
                 if (!is_destroyed) {
                     label.set_text(processed_text);
                 }
                 return Source.REMOVE;
             });
-             stdout.printf("--- update_label_content finished ---\n"); // Кінець виконання
         }
 
-         public override void destroy () {
+        public override void destroy () {
+            stdout.printf("Applet destroy called.\n");
             this.is_destroyed = true;
             if (timer_id > 0) {
                 Source.remove (timer_id);
                 timer_id = 0;
+            }
+            // Якщо вікно налаштувань ще існує, закриваємо його
+            if (this.settings_window != null) {
+                stdout.printf("Applet destroying, also destroying settings window.\n");
+                this.settings_window.destroy (); // Це викличе сигнал destroy у вікна
+                this.settings_window = null; // Про всяк випадок скидаємо посилання
             }
             base.destroy ();
         }

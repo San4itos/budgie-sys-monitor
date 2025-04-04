@@ -153,6 +153,10 @@ namespace SysMonitor {
             main_box.pack_end(save_button, false, false, 0); // Використовуємо pack_end
 
             add(main_box);
+
+            this.destroy.connect (() => {
+                applet.on_settings_window_destroyed ();
+            });
         }
 
         // --- Допоміжна функція для додавання рядка вбудованого тегу ---
