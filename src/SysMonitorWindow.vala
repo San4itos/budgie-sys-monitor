@@ -1,18 +1,18 @@
 // src/SysMonitorWindow.vala
-
 using Gtk;
 
 namespace SysMonitor {
-
     public class SysMonitorWindow : Gtk.Window {
+        // ... (поля класу без змін) ...
         private SysMonitor.Applet applet;
         private Gtk.Entry main_entry;
         private Gtk.Box commands_box;
-        private Gtk.SpinButton refresh_interval_spin; // Тип не змінився
+        private Gtk.SpinButton refresh_interval_spin;
         private const int MAX_COMMANDS = 10;
 
-        // <<< ЗМІНЕНО: Тип initial_interval тепер double, значення за замовчуванням 1.0 >>>
-        public SysMonitorWindow(SysMonitor.Applet parent, string plugin_dir, string initial_text, GenericArray<CommandData?> initial_commands, double initial_interval = 1.0) {
+
+        // ... (конструктор, add_empty_row, add_command_row_with_data, on_entry_activate, on_add_button_clicked, etc. без змін) ...
+         public SysMonitorWindow(SysMonitor.Applet parent, string plugin_dir, string initial_text, GenericArray<CommandData?> initial_commands, double initial_interval = 1.0) {
             Object(
                 window_position: Gtk.WindowPosition.CENTER,
                 default_width: 400,
@@ -24,26 +24,16 @@ namespace SysMonitor {
             var main_box = new Gtk.Box(Gtk.Orientation.VERTICAL, 10);
             main_box.margin = 10;
             main_box.get_style_context().add_class("dialog-box");
-
-            // Секція для налаштування інтервалу оновлення
             var refresh_box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
-
             var refresh_label = new Gtk.Label("Час оновлення (сек.):");
             refresh_box.pack_start(refresh_label, false, false, 0);
-
-            // <<< ЗМІНЕНО: Налаштування Adjustment для дробних значень (0.1 - 10.0, крок 0.1) >>>
             var refresh_adjustment = new Gtk.Adjustment (initial_interval, 0.1, 10.0, 0.1, 1.0, 0.0);
-
-            // <<< ЗМІНЕНО: Створення SpinButton з 1 десятковим знаком >>>
-            refresh_interval_spin = new Gtk.SpinButton (refresh_adjustment, 0.1, 1); // Крок затискання 0.1, 1 десятковий знак
+            refresh_interval_spin = new Gtk.SpinButton (refresh_adjustment, 0.1, 1);
             refresh_interval_spin.set_numeric(true);
             refresh_interval_spin.set_tooltip_text("Інтервал оновлення даних в секундах (0.1 - 10.0)");
             refresh_box.pack_start(refresh_interval_spin, false, false, 0);
-
             main_box.pack_start(refresh_box, false, false, 0);
 
-
-            // --- Решта віджетів без змін ---
             main_entry = new Gtk.Entry();
             main_entry.set_placeholder_text("Введіть текст для відображення...");
             main_entry.set_text(initial_text);
@@ -57,7 +47,6 @@ namespace SysMonitor {
             commands_box = new Gtk.Box(Gtk.Orientation.VERTICAL, 5);
             main_box.pack_start(commands_box, true, true, 0);
 
-            // Завантаження існуючих команд
             if (initial_commands.length > 0) {
                 for (int i = 0; i < initial_commands.length && i < MAX_COMMANDS; i++) {
                     var cmd = initial_commands[i];
@@ -66,16 +55,16 @@ namespace SysMonitor {
                     }
                 }
             }
-            // Додавання порожнього рядка
             if (commands_box.get_children().length() < MAX_COMMANDS) {
                 add_empty_row();
             }
 
-            // Кнопка Зберегти
             var save_button = new Gtk.Button.with_label("Зберегти");
             save_button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION);
+            // <<< ЗМІНЕНО: Обробник кнопки Зберегти >>>
             save_button.clicked.connect(() => {
-                var commands = new GenericArray<CommandData?>();
+                // 1. Збираємо команди з UI (тільки підтверджені)
+                var commands_from_ui = new GenericArray<CommandData?>();
                 foreach (var child in commands_box.get_children()) {
                     var row = child as Gtk.Box;
                     if (row == null) continue;
@@ -90,39 +79,40 @@ namespace SysMonitor {
                         tag_entry.get_text() != null && tag_entry.get_text().length > 0 &&
                         command_entry.get_text() != null && command_entry.get_text().length > 0)
                     {
+                        // Додаємо до списку тільки ті команди, що мають кнопку "-"
                         if (button.get_label() == "-") {
-                             commands.add(CommandData() {
+                             commands_from_ui.add(CommandData() {
                                 tag = tag_entry.get_text(),
                                 command = command_entry.get_text()
                             });
                         }
                     }
                 }
-                if (commands.length > MAX_COMMANDS) {
-                    commands.remove_range(MAX_COMMANDS, commands.length - MAX_COMMANDS);
+                // Обрізаємо масив, якщо якимось чином додалося більше MAX_COMMANDS
+                if (commands_from_ui.length > MAX_COMMANDS) {
+                    commands_from_ui.remove_range(MAX_COMMANDS, commands_from_ui.length - MAX_COMMANDS);
                 }
 
-                // <<< ЗМІНЕНО: Отримуємо значення як double >>>
-                double interval = refresh_interval_spin.get_value();
+                // 2. Отримуємо текст та інтервал з UI
+                string current_text = main_entry.get_text();
+                double current_interval = refresh_interval_spin.get_value();
 
-                // <<< ЗМІНЕНО: Передаємо double інтервал до Applet >>>
-                applet.update_label_with_commands(main_entry.get_text(), commands, interval);
+                // 3. Викликаємо оновлений метод Applet, передаючи всі дані з UI
+                applet.update_configuration(current_text, commands_from_ui, current_interval);
 
+                // 4. Закриваємо вікно
                 this.destroy();
             });
             main_box.pack_start(save_button, false, false, 0);
 
             add(main_box);
         }
-
-        // --- Решта методів (add_empty_row, add_command_row_with_data, on_entry_activate, on_add_button_clicked, etc.) залишаються без змін ---
-         private void add_empty_row() {
+        private void add_empty_row() {
             if (commands_box.get_children().length() >= MAX_COMMANDS) {
                 return;
             }
             add_command_row_with_data("", "", false);
         }
-
         private void add_command_row_with_data(string tag, string command, bool is_locked) {
              bool tag_is_empty = (tag == null || tag.length == 0);
              bool command_is_empty = (command == null || command.length == 0);
@@ -137,12 +127,14 @@ namespace SysMonitor {
             tag_entry.set_placeholder_text("Тег ([tag])");
             tag_entry.set_width_chars(7);
             row.pack_start(tag_entry, false, false, 0);
+            tag_entry.set_text(tag);
 
             var command_entry = new Gtk.Entry();
             command_entry.set_placeholder_text("Команда");
             command_entry.hexpand = true;
             command_entry.set_text(command);
             row.pack_start(command_entry, true, true, 0);
+
 
             var button = new Gtk.Button();
             row.pack_start(button, false, false, 0);
@@ -172,14 +164,12 @@ namespace SysMonitor {
             commands_box.pack_start(row, false, false, 0);
             commands_box.show_all();
         }
-
         private void on_entry_activate(Gtk.Entry entry) {
             var button = entry.get_data<Gtk.Button?>("add_button");
             if (button != null && button.get_label() == "+") {
                 button.clicked ();
             }
         }
-
         private void on_add_button_clicked(Gtk.Button button) {
             var tag_entry = button.get_data<Gtk.Entry>("tag_entry");
             var command_entry = button.get_data<Gtk.Entry>("command_entry");
@@ -260,7 +250,6 @@ namespace SysMonitor {
                 }
             }
         }
-
         private void remove_command_row(Gtk.Box row) {
             commands_box.remove(row);
             if (commands_box.get_children().length() < MAX_COMMANDS && !has_empty_row()) {
@@ -268,7 +257,6 @@ namespace SysMonitor {
             }
              commands_box.show_all();
         }
-
         private bool has_empty_row() {
             foreach (var child in commands_box.get_children()) {
                 var row = child as Gtk.Box;
@@ -282,7 +270,6 @@ namespace SysMonitor {
             }
             return false;
         }
-
         private bool is_valid_tag(string tag, Gtk.Entry entry_being_checked) {
             if (tag == null) {
                 return false;
@@ -315,5 +302,5 @@ namespace SysMonitor {
             return true;
         }
 
-    }
-}
+    } // Кінець класу SysMonitorWindow
+} // Кінець namespace SysMonitor
