@@ -138,7 +138,7 @@ namespace SysMonitor {
         // Завантаження повної конфігурації з JSON файлу
         private void load_full_config() {
             // Значення за замовчуванням
-            var config = AppConfig() { text = "[CPU] | [MEM]", interval = 1.0 }; // Приклад дефолтного тексту
+            var config = AppConfig() { text = "Натисни мене для налаштування...", interval = 1.0 }; // Приклад дефолтного тексту
             var commands = new GenericArray<CommandData?>();
             var json_path = GLib.Path.build_filename(config_dir, "config.json");
 
@@ -385,14 +385,14 @@ namespace SysMonitor {
                     processed_text = processed_text.replace("[CPU_FREQ]", freq_text);
                 }
 
-                // !!! ДОДАНО: Обробка [MEM] !!!
+                // [MEM] !!!
                 if (processed_text.contains("[MEM]")) {
                     int mem_perc = SysInfo.get_mem_percentage(); // Статичний метод
                     string mem_text = (mem_perc >= 0) ? mem_perc.to_string() + "%" : "[MEM ERR]";
                     processed_text = processed_text.replace("[MEM]", mem_text);
                 }
 
-                // !!! ДОДАНО: Обробка [SWAP] !!!
+                // [SWAP] !!!
                 if (processed_text.contains("[SWAP]")) {
                     int swap_perc = SysInfo.get_swap_percentage(); // Статичний метод
                     // Якщо swap = 0%, можливо, він просто вимкнений або не використовується
@@ -400,18 +400,35 @@ namespace SysMonitor {
                     processed_text = processed_text.replace("[SWAP]", swap_text);
                 }
 
-                // TODO: Додати обробку [UPTIME], [LOAD] тут
-                // Приклад:
-                // if (processed_text.contains("[MEM]")) {
-                //    string mem_str = sys_info.get_memory_usage_string (); // Потрібно реалізувати метод
-                //    processed_text = processed_text.replace("[MEM]", mem_str ?? "[MEM ERR]");
-                // }
+                bool has_dl = processed_text.contains("[DL]");
+                bool has_up = processed_text.contains("[UP]");
+
+                if (has_dl || has_up) {
+                    // Отримуємо структуру зі швидкостями DL та UP в KiB/s
+                    NetworkSpeeds speeds = SysInfo.get_network_speeds();
+
+                    // Обробляємо [DL]
+                    if (has_dl) {
+                        string dl_text = SysInfo.format_speed(speeds.dl_kibps);
+                        processed_text = processed_text.replace("[DL]", dl_text);
+                    }
+
+                    // Обробляємо [UP]
+                    if (has_up) {
+                        string up_text = SysInfo.format_speed(speeds.ul_kibps);
+                        processed_text = processed_text.replace("[UP]", up_text);
+                    }
+                }
 
             } catch (Error e) {
                 printerr("Error processing internal tags: %s\n", e.message);
                 // Замінюємо потенційно проблемні теги на [ERR]
                 processed_text = processed_text.replace("[CPU]", "[ERR]");
                 processed_text = processed_text.replace("[CPU_FREQ]", "[ERR]");
+                processed_text = processed_text.replace("[MEM]", "[ERR]");
+                processed_text = processed_text.replace("[SWAP]", "[ERR]");
+                processed_text = processed_text.replace("[DL]", "[NET ERR]");
+                processed_text = processed_text.replace("[UP]", "[NET ERR]");
                 // ... і т.д.
             }
 

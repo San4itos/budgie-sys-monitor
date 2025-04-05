@@ -6,7 +6,6 @@ namespace SysMonitor {
         // ... (поля класу без змін) ...
         private SysMonitor.Applet applet;
         private Gtk.Entry main_entry;
-        // !!! ЗМІНЕНО: Перейменовано commands_box на custom_commands_box для ясності
         private Gtk.Box custom_commands_box;
         private Gtk.SpinButton refresh_interval_spin;
         private const int MAX_COMMANDS = 10;
@@ -22,21 +21,28 @@ namespace SysMonitor {
             { "[CPU]",    "Відсоток використання ЦП (з libgtop)" },
             { "[MEM]",    "Використання пам'яті (%, з libgtop)" }, // Потрібно буде додати в SysInfo
             { "[SWAP]",   "Використання Swap (%, з libgtop)" },  // Потрібно буде додати в SysInfo
-            { "[CPU_FREQ]", "Макс. частота ЦП (ГГц, з /sys)" }
+            { "[CPU_FREQ]", "Макс. частота ЦП (ГГц, з /sys)" },
+            { "[DL]", "Швидкість завантаження" },
+            { "[UP]", "Швидкість надсилання" }
             // Додавай сюди інші за потреби
         };
 
 
         // Конструктор
         public SysMonitorWindow(SysMonitor.Applet parent, string plugin_dir, string initial_text, GenericArray<CommandData?> initial_commands, double initial_interval = 1.0) {
+            const int min_width = 780;
+            const int min_height = 460;
+
             Object(
                 window_position: Gtk.WindowPosition.CENTER,
-                default_width: 800,
-                // Трохи збільшимо висоту за замовчуванням
-                default_height: 450,
-                title: "Налаштування Sys Monitor" // Змінено заголовок
+                default_width: min_width,
+                default_height: min_height,
+                title: "Налаштування Sys Monitor"
             );
+
             this.applet = parent;
+
+            this.set_size_request(min_width, min_height);
 
             var main_box = new Gtk.Box(Gtk.Orientation.VERTICAL, 10);
             main_box.margin = 10;
