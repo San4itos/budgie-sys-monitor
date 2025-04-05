@@ -7,16 +7,123 @@ msgid ""
 msgstr ""
 "Project-Id-Version: san 4itos\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-05 22:41+0300\n"
-"PO-Revision-Date: 2025-04-05 22:27+0300\n"
-"Last-Translator:  <san4itos@gmail.com>\n"
+"POT-Creation-Date: 2025-04-06 01:50+0300\n"
+"PO-Revision-Date: 2025-04-06 01:46+0300\n"
+"Last-Translator: san4itos@gmail.com\n"
 "Language-Team: English\n"
 "Language: en_US\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.5\n"
 
-#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitor.vala:151
-msgid "Натисни мене для налаштування..."
-msgstr "Натисни мене для налаштування..."
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitor.vala:187
+msgid "Натисни мене та зміни цей текст..."
+msgstr "Press me and change this text..."
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:23
+msgid "Відсоток використання ЦП (з libgtop)"
+msgstr "CPU load percent (libgtop)"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:24
+msgid "Використання пам'яті (%, з libgtop)"
+msgstr "Memory usage (%, libgtop)"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:25
+msgid "Використання Swap (%, з libgtop)"
+msgstr "Swap usage (%, libgtop)"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:26
+msgid "Макс. частота ЦП (ГГц, з /sys)"
+msgstr "MAX CPU frequency (GHz, from /sys)"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:27
+msgid "Швидкість завантаження"
+msgstr "Download speed"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:28
+msgid "Швидкість надсилання"
+msgstr "Upload speed"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:43
+msgid "Налаштування Sys Monitor"
+msgstr "Sys Monitor Settings"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:58
+msgid "Час оновлення (сек.):"
+msgstr "Refresh Time (sec.)"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:63
+msgid "Інтервал оновлення даних в секундах (0.1 - 10.0)"
+msgstr "Data refresh interval in seconds (0.1 - 10.0)"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:69
+msgid "Введіть текст для відображення (використовуйте теги)..."
+msgstr "Enter text to display (use tags)"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:77
+msgid "<b>Вбудовані теги (для копіювання):</b>"
+msgstr "<b>Embedded tags (for copy):</b>"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:97
+msgid "<b>Команди користувача (тег -> команда):</b>"
+msgstr "<b>User commands (tag -> command):</b>"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:126
+msgid "Закрити"
+msgstr "Close"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:135
+msgid "Зберегти"
+msgstr "Save"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:168
+msgid "Збережено!"
+msgstr "Saved!"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:198
+msgid "Натисніть Ctrl+C, щоб скопіювати тег"
+msgstr "Press Ctrl+C to copy tag"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:235
+msgid "[Тег]"
+msgstr "[Tag]"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:238
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:307
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:394
+msgid "Унікальний тег у форматі [my_tag]"
+msgstr "Unique tag in the format [my_tag]"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:243
+msgid "Команда оболонки, наприклад: date '+%H:%M:%S'"
+msgstr "Shell command, for example: date '+%H:%M:%S'"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:244
+msgid "Команда оболонки (shell)"
+msgstr "Shell command"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:261
+msgid "Додати/підтвердити команду"
+msgstr "Add/Apply command"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:316
+msgid "Тег не може бути порожнім"
+msgstr "Tag can not be empty"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:338
+msgid "Видалити команду"
+msgstr "Delete command"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:399
+msgid "Тег має бути у форматі [текст]"
+msgstr "Tag must in a [text] format"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:420
+msgid "Цей тег вже використовується"
+msgstr "This tag is already in use"
+
+#: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:430
+msgid "Цей тег є вбудованим"
+msgstr "This tag is reserved"

@@ -51,12 +51,48 @@ namespace SysMonitor {
             // !!! ДОДАНО/ПЕРЕВІРЕНО ЛОГ У КОНСТРУКТОР !!!
             stdout.printf("<<<<< Applet CONSTRUCTOR CALLED (UUID: %s) >>>>>\n", uuid);
 
-            // In your initialization function
-            Intl.setlocale(LocaleCategory.ALL, "");
-            Intl.bindtextdomain(GETTEXT_PACKAGE, "/usr/share/locale");
-            Intl.bind_textdomain_codeset(GETTEXT_PACKAGE, "UTF-8");
-            Intl.textdomain(GETTEXT_PACKAGE);
-            
+            // !!! ВИПРАВЛЕНА ІНІЦІАЛІЗАЦІЯ Gettext (версія 3) !!!
+            try {
+                // 1. Встановлюємо локаль з системних налаштувань
+                string? current_locale = Intl.setlocale (LocaleCategory.ALL, "");
+                stdout.printf("Gettext: Locale set to %s\n", current_locale ?? "(null)");
+
+                // 2. Визначаємо шлях до .mo файлів
+                string? data_home = Environment.get_user_data_dir (); // -> ~/.local/share
+                string localedir_user = "";
+                string localedir_system = "/usr/share/locale"; // Стандартний системний
+                string final_localedir;
+
+                // Формуємо шлях до користувацької директорії локалей
+                if (data_home != null) {
+                    localedir_user = GLib.Path.build_filename(data_home, "locale");
+                }
+
+                // Перевіряємо, чи існує користувацька директорія локалей
+                // І використовуємо її, якщо вона існує
+                if (localedir_user != "" && FileUtils.test(localedir_user, FileTest.IS_DIR)) {
+                    final_localedir = localedir_user;
+                }
+                // В іншому випадку використовуємо системний шлях
+                else {
+                    final_localedir = localedir_system;
+                }
+
+                stdout.printf("Gettext: Binding textdomain '%s' to dir '%s'\n", GETTEXT_PACKAGE, final_localedir);
+
+                // 3. Прив'язуємо текстовий домен до знайденої директорії
+                Intl.bindtextdomain(GETTEXT_PACKAGE, final_localedir);
+                // 4. Вказуємо кодування (зазвичай UTF-8)
+                Intl.bind_textdomain_codeset(GETTEXT_PACKAGE, "UTF-8");
+                // 5. Активуємо наш текстовий домен
+                Intl.textdomain(GETTEXT_PACKAGE);
+                stdout.printf("Gettext initialized for domain '%s'.\n", GETTEXT_PACKAGE);
+
+            } catch (Error e) {
+                printerr("Error initializing Gettext: %s\n", e.message);
+            }
+            // !!! Кінець ініціалізації Gettext !!!
+
             // Визначаємо шляхи та завантажуємо конфігурацію
             plugin_dir = get_plugin_dir();
             config_dir = get_config_dir();
@@ -148,7 +184,7 @@ namespace SysMonitor {
         // Завантаження повної конфігурації з JSON файлу
         private void load_full_config() {
             // Значення за замовчуванням
-            var config = AppConfig() { text = _("Натисни мене для налаштування..."), interval = 1.0 }; // Приклад дефолтного тексту
+            var config = AppConfig() { text = _("Натисни мене та зміни цей текст..."), interval = 1.0 }; // Приклад дефолтного тексту
             var commands = new GenericArray<CommandData?>();
             var json_path = GLib.Path.build_filename(config_dir, "config.json");
 
