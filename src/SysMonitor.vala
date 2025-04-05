@@ -3,6 +3,8 @@ using Gtk;
 using Budgie;
 using GLib;
 
+[CCode (cname = "GETTEXT_PACKAGE")] extern const string GETTEXT_PACKAGE;
+
 namespace SysMonitor {
 
     // Структура для збереження базової конфігурації
@@ -27,6 +29,7 @@ namespace SysMonitor {
 
     // Основний клас аплету
     public class Applet : Budgie.Applet {
+
         private Gtk.EventBox widget; // Контейнер для кліків
         private Gtk.Label label;     // Мітка для відображення тексту
         private string plugin_dir;   // Шлях до директорії плагіна (для CSS)
@@ -47,6 +50,13 @@ namespace SysMonitor {
         public Applet(string uuid) {
             // !!! ДОДАНО/ПЕРЕВІРЕНО ЛОГ У КОНСТРУКТОР !!!
             stdout.printf("<<<<< Applet CONSTRUCTOR CALLED (UUID: %s) >>>>>\n", uuid);
+
+            // In your initialization function
+            Intl.setlocale(LocaleCategory.ALL, "");
+            Intl.bindtextdomain(GETTEXT_PACKAGE, "/usr/share/locale");
+            Intl.bind_textdomain_codeset(GETTEXT_PACKAGE, "UTF-8");
+            Intl.textdomain(GETTEXT_PACKAGE);
+            
             // Визначаємо шляхи та завантажуємо конфігурацію
             plugin_dir = get_plugin_dir();
             config_dir = get_config_dir();
@@ -138,7 +148,7 @@ namespace SysMonitor {
         // Завантаження повної конфігурації з JSON файлу
         private void load_full_config() {
             // Значення за замовчуванням
-            var config = AppConfig() { text = "Натисни мене для налаштування...", interval = 1.0 }; // Приклад дефолтного тексту
+            var config = AppConfig() { text = _("Натисни мене для налаштування..."), interval = 1.0 }; // Приклад дефолтного тексту
             var commands = new GenericArray<CommandData?>();
             var json_path = GLib.Path.build_filename(config_dir, "config.json");
 
