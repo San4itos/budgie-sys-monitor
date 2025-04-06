@@ -103,6 +103,7 @@ namespace SysMonitor {
             label = new Gtk.Label("..."); // Початковий текст
             label.get_style_context().add_class("sys-monitor-label"); // Додаємо клас для CSS
             widget.add(label);
+            label.set_tooltip_text(_("Left click to open settings"));
 
             // Завантажуємо CSS, якщо є
             var css_path = GLib.Path.build_filename(plugin_dir, "style.css");
@@ -184,7 +185,7 @@ namespace SysMonitor {
         // Завантаження повної конфігурації з JSON файлу
         private void load_full_config() {
             // Значення за замовчуванням
-            var config = AppConfig() { text = _("Натисни мене та зміни цей текст..."), interval = 1.0 }; // Приклад дефолтного тексту
+            var config = AppConfig() { text = _("Change this text in settings..."), interval = 1.0 }; // Приклад дефолтного тексту
             var commands = new GenericArray<CommandData?>();
             var json_path = GLib.Path.build_filename(config_dir, "config.json");
 

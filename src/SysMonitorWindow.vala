@@ -20,12 +20,12 @@ namespace SysMonitor {
         private static HardcodedTagInfo[] hardcoded_tags;
         static construct {
             hardcoded_tags = new HardcodedTagInfo[] {
-                { "[CPU]",    _("Відсоток використання ЦП (з libgtop)") },
-                { "[MEM]",    _("Використання пам'яті (%, з libgtop)") },
-                { "[SWAP]",   _("Використання Swap (%, з libgtop)") },
-                { "[CPU_FREQ]", _("Макс. частота ЦП (ГГц, з /sys)") },
-                { "[DL]", _("Швидкість завантаження") },
-                { "[UP]", _("Швидкість надсилання") }
+                { "[CPU]",    _("CPU Usage (%, libgtop)") },
+                { "[MEM]",    _("Memory Usage (%, libgtop)") },
+                { "[SWAP]",   _("Swap Usage (%, libgtop)") },
+                { "[CPU_FREQ]", _("Avg CPU frequency (GHz, /sys)") },
+                { "[DL]", _("Download speed") },
+                { "[UP]", _("Upload speed") }
                 // Додавай сюди інші за потреби
             };
         }
@@ -40,7 +40,7 @@ namespace SysMonitor {
                 window_position: Gtk.WindowPosition.CENTER,
                 default_width: min_width,
                 default_height: min_height,
-                title: _("Налаштування Sys Monitor")
+                title: _("Sys Monitor Settings")
             );
 
             this.applet = parent;
@@ -55,18 +55,18 @@ namespace SysMonitor {
 
             // --- Блок Налаштування оновлення ---
             var refresh_box = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 6);
-            var refresh_label = new Gtk.Label(_("Час оновлення (сек.):"));
+            var refresh_label = new Gtk.Label(_("Refresh interval (sec.):"));
             refresh_box.pack_start(refresh_label, false, false, 0);
             var refresh_adjustment = new Gtk.Adjustment (initial_interval, 0.1, 10.0, 0.1, 1.0, 0.0);
             refresh_interval_spin = new Gtk.SpinButton (refresh_adjustment, 0.1, 1);
             refresh_interval_spin.set_numeric(true);
-            refresh_interval_spin.set_tooltip_text(_("Інтервал оновлення даних в секундах (0.1 - 10.0)"));
+            refresh_interval_spin.set_tooltip_text(_("Data refresh interval in seconds (0.1 - 10.0)"));
             refresh_box.pack_start(refresh_interval_spin, false, false, 0);
             main_box.pack_start(refresh_box, false, false, 0);
 
             // --- Блок Шаблону виводу ---
             main_entry = new Gtk.Entry();
-            main_entry.set_placeholder_text(_("Введіть текст для відображення (використовуйте теги)..."));
+            main_entry.set_placeholder_text(_("Enter text to display (use [tags])..."));
             main_entry.set_text(initial_text);
             main_box.pack_start(main_entry, false, false, 0);
 
@@ -74,7 +74,7 @@ namespace SysMonitor {
             main_box.pack_start(new Gtk.Separator(Gtk.Orientation.HORIZONTAL), false, false, 5);
 
             // --- Блок Вбудованих тегів ---
-            var hardcoded_tags_label = new Gtk.Label(_("<b>Вбудовані теги (для копіювання):</b>"));
+            var hardcoded_tags_label = new Gtk.Label(_("<b>Built-in Tags:</b>"));
             hardcoded_tags_label.use_markup = true;
             hardcoded_tags_label.xalign = 0;
             main_box.pack_start(hardcoded_tags_label, false, false, 5);
@@ -94,7 +94,7 @@ namespace SysMonitor {
 
 
             // --- Блок Користувацьких команд ---
-            var custom_commands_label = new Gtk.Label(_("<b>Команди користувача (тег -> команда):</b>"));
+            var custom_commands_label = new Gtk.Label(_("<b>User tags:</b>"));
             custom_commands_label.use_markup = true;
             custom_commands_label.xalign = 0;
             main_box.pack_start(custom_commands_label, false, false, 5);
@@ -123,7 +123,7 @@ namespace SysMonitor {
             main_box.pack_end(action_box, false, false, 0); // Додаємо в кінець головного боксу
 
             // Кнопка ЗАКРИТИ
-            var close_button = new Gtk.Button.with_label(_("Закрити"));
+            var close_button = new Gtk.Button.with_label(_("Close"));
             close_button.get_style_context().add_class(Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION);
             // !!! ДОДАНО: Обробник для кнопки Закрити !!!
             close_button.clicked.connect(() => {
@@ -132,7 +132,7 @@ namespace SysMonitor {
             action_box.pack_end(close_button, false, false, 0); // Додаємо справа
 
             // Кнопка ЗБЕРЕГТИ
-            var save_button = new Gtk.Button.with_label(_("Зберегти"));
+            var save_button = new Gtk.Button.with_label(_("Save"));
             save_button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION);
              // !!! ЗМІНЕНО: Обробник кнопки Зберегти !!!
             save_button.clicked.connect(() => {
@@ -165,7 +165,7 @@ namespace SysMonitor {
                 applet.update_configuration(current_text, commands_from_ui, current_interval);
 
                 var original_label = save_button.get_label();
-                save_button.set_label(_("Збережено!"));
+                save_button.set_label(_("Saved!"));
                 save_button.set_sensitive(false); // Робимо неактивною на мить
                 Timeout.add(1500, () => { // Через 1.5 секунди
                     if (save_button.get_window() != null) { // Перевірка, чи кнопка ще існує
@@ -193,9 +193,9 @@ namespace SysMonitor {
             var tag_entry = new Gtk.Entry();
             tag_entry.set_text(tag);
             tag_entry.set_editable(false); // Не можна редагувати
-            tag_entry.set_can_focus(false); // Можна прибрати фокус
+            // tag_entry.set_can_focus(false); // Можна прибрати фокус
             tag_entry.set_width_chars(12); // Задаємо ширину для вирівнювання
-            tag_entry.set_tooltip_text(_("Натисніть Ctrl+C, щоб скопіювати тег"));
+            tag_entry.set_tooltip_text(_("Press Ctrl+C, to copy tag"));
             row.pack_start(tag_entry, false, false, 0);
 
             var desc_label = new Gtk.Label(description);
@@ -232,16 +232,16 @@ namespace SysMonitor {
             var row = new Gtk.Box(Gtk.Orientation.HORIZONTAL, 5);
 
             var tag_entry = new Gtk.Entry();
-            tag_entry.set_placeholder_text(_("[Тег]"));
+            tag_entry.set_placeholder_text(_("[Tag]"));
             // Зробимо трохи ширшим для узгодження з вбудованими
             tag_entry.set_width_chars(10);
-            tag_entry.set_tooltip_text(_("Унікальний тег у форматі [my_tag]"));
+            tag_entry.set_tooltip_text(_("Unique tag in [my_tag] format"));
             row.pack_start(tag_entry, false, false, 0);
             tag_entry.set_text(tag);
 
             var command_entry = new Gtk.Entry();
-            command_entry.set_tooltip_text(_("Команда оболонки, наприклад: date '+%H:%M:%S'"));
-            command_entry.set_placeholder_text(_("Команда оболонки (shell)"));
+            command_entry.set_tooltip_text(_("Shell command, e.g.: date '+%H:%M:%S'"));
+            command_entry.set_placeholder_text(_("Command (shell)"));
             command_entry.hexpand = true;
             command_entry.set_text(command);
             row.pack_start(command_entry, true, true, 0);
@@ -258,7 +258,7 @@ namespace SysMonitor {
             } else {
                 button.set_label("+");
                 button.get_style_context().add_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION);
-                button.set_tooltip_text(_("Додати/підтвердити команду"));
+                button.set_tooltip_text(_("Save Command"));
 
                 // Зберігаємо посилання на елементи рядка в кнопці
                 button.set_data<Gtk.Entry>("tag_entry", tag_entry);
@@ -304,7 +304,7 @@ namespace SysMonitor {
             // Очищення попередніх стилів помилок
             tag_entry.get_style_context().remove_class("error");
             command_entry.get_style_context().remove_class("error");
-            tag_entry.set_tooltip_text(_("Унікальний тег у форматі [my_tag]")); // Повертаємо стандартний tooltip
+            tag_entry.set_tooltip_text(_("Unique tag in [my_tag] format")); // Повертаємо стандартний tooltip
 
             bool is_tag_ok = false;
             bool is_command_ok = (command_text != null && command_text.length > 0); // Команда не може бути порожньою
@@ -313,7 +313,7 @@ namespace SysMonitor {
             if (tag_text == null || tag_text.length == 0) {
                 is_tag_ok = false;
                 tag_entry.get_style_context().add_class("error");
-                tag_entry.set_tooltip_text(_("Тег не може бути порожнім"));
+                tag_entry.set_tooltip_text(_("Tag cannot be empty"));
             } else {
                 is_tag_ok = is_valid_tag(tag_text, tag_entry); // is_valid_tag тепер додає стиль та tooltip при помилці
             }
@@ -335,7 +335,7 @@ namespace SysMonitor {
                 button.set_label("-");
                 button.get_style_context().remove_class(Gtk.STYLE_CLASS_SUGGESTED_ACTION);
                 button.get_style_context().add_class(Gtk.STYLE_CLASS_DESTRUCTIVE_ACTION);
-                button.set_tooltip_text(_("Видалити команду")); // Оновлюємо tooltip
+                button.set_tooltip_text(_("Remove command")); // Оновлюємо tooltip
 
                 // Відключаємо старий обробник і підключаємо новий (видалення)
                 button.clicked.disconnect(on_add_button_clicked);
@@ -391,12 +391,12 @@ namespace SysMonitor {
         // Перевіряє валідність тегу користувача (формат, унікальність)
         private bool is_valid_tag(string tag, Gtk.Entry entry_being_checked) {
             bool is_ok = true;
-            string tooltip_message = _("Унікальний тег у форматі [my_tag]"); // Повідомлення за замовчуванням
+            string tooltip_message = _("Unique tag in [my_tag] format"); // Повідомлення за замовчуванням
 
             // Перевірка формату [tag]
             if (tag == null || !tag.has_prefix("[") || !tag.has_suffix("]") || tag.length <= 2) {
                 is_ok = false;
-                tooltip_message = _("Тег має бути у форматі [текст]");
+                tooltip_message = _("Tag must have [text] format");
             } else {
                 // Перевірка на унікальність серед користувацьких команд
                 // !!! ЗМІНЕНО: Перевіряємо custom_commands_box !!!
@@ -417,7 +417,7 @@ namespace SysMonitor {
                         string existing_tag_text = existing_tag_entry.get_text();
                         if (existing_tag_text != null && existing_tag_text == tag) {
                             is_ok = false;
-                            tooltip_message = _("Цей тег вже використовується");
+                            tooltip_message = _("This tag is already in use");
                             break; // Знайшли дублікат, далі не шукаємо
                         }
                     }
@@ -427,7 +427,7 @@ namespace SysMonitor {
                      foreach (var hardcoded in hardcoded_tags) {
                          if (tag == hardcoded.tag) {
                              is_ok = false;
-                             tooltip_message = _("Цей тег є вбудованим");
+                             tooltip_message = _("This tag is built-in");
                              break;
                          }
                      }

@@ -1,6 +1,6 @@
 # po/meson.build
 
-langs = ['en']
+langs = ['uk']
 potfiles_sources_paths = [ meson.project_source_root() + '/src/SysMonitor.vala', meson.project_source_root() + '/src/SysMonitorWindow.vala' ]
 domain = 'sysmonitor'
 gettext_package_name = domain
@@ -24,46 +24,51 @@ po_targets = [] # Для цілі update-po
 foreach lang : langs
     po_file = lang + '.po'
     po_path = meson.current_source_dir() / po_file
-    po_file_obj = files(po_file) # Об'єкт файлу po/en.po
 
     po_exists = run_command('test', '-f', po_path, check: false).returncode() == 0
 
-    # Цілі для оновлення/ініціалізації (виконуються вручну через 'update-po')
     if po_exists
+        po_file_obj = files(po_file)
+
         update_po = custom_target(lang + '_po_update',
-            input: pot_target, # Залежить від .pot
-            output: lang + '.po.update', # Фіктивний вихід
-            command: [ msgmerge, '--update', '--quiet', '--backup=none', po_path, '@INPUT@' ], # Оновлюємо po_path
-            build_by_default: false # Не виконувати за замовчуванням
+            input: pot_target,
+            output: lang + '.po.update',
+            command: [ msgmerge, '--update', '--quiet', '--backup=none', po_path, '@INPUT@' ],
+            build_by_default: false
         )
         po_targets += update_po
-        dependency_for_mo = update_po # .mo залежить від результату оновлення
+        dependency_for_mo = update_po
     else
         init_po = custom_target(lang + '_po_init',
-            input: pot_target, # Залежить від .pot
-            output: lang + '.po.init', # Фіктивний вихід
-            command: [ msginit, '--input=@INPUT@', '--output-file=' + po_path, '--locale=' + lang ], # Створюємо po_path
-            build_by_default: false # Не виконувати за замовчуванням
+            input: pot_target,
+            output: lang + '.po.init',
+            command: [ msginit, '--no-translator', '--input=@INPUT@', '--output-file=' + po_path, '--locale=' + lang ],
+            build_by_default: false
         )
+        
         po_targets += init_po
-        dependency_for_mo = init_po # .mo залежить від результату ініціалізації
+        dependency_for_mo = init_po
+
+        # Генеруємо об'єкт, щоб msgfmt не зламався (тільки для .mo)
+        po_file_obj = custom_target(lang + '_fake_po_for_mo',
+            input: init_po,
+            output: po_file,
+            command: ['cat', po_path], # трюк — використовує вже створений po файл
+        )
     endif
 
-    # Компіляція MO файлів
     mo_target = custom_target(lang + '_mo',
-        input: po_file_obj, # Залежить від існування/змісту po/en.po
-        # !!! ВАЖЛИВО: Залежить від цілі оновлення/ініціалізації !!!
-        # Щоб .mo компілювався ПІСЛЯ того, як .po міг бути змінений
+        input: po_file_obj,
         depends: dependency_for_mo,
-        output: gettext_package_name + '.mo', # Правильне ім'я файлу у builddir
+        output: gettext_package_name + '.mo',
         command: [
             msgfmt,
             '--output-file=@OUTPUT@',
-            '@INPUT@' # !!! Використовуємо @INPUT@, що посилається на po_file_obj !!!
+            '@INPUT@'
         ],
         install: true,
         install_dir: join_paths(get_option('prefix'), get_option('datadir'), 'locale', lang, 'LC_MESSAGES'),
-        build_by_default: true # Компілювати .mo під час ninja
+        build_by_default: true
     )
 endforeach
 
