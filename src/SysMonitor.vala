@@ -482,76 +482,77 @@ namespace SysMonitor {
 
             // --- ОБРОБКА КОРИСТУВАЦЬКИХ КОМАНД ---
             foreach (var cmd_data in this.current_commands) {
-                 // Пропускаємо невалідні записи
-                 if (cmd_data == null || cmd_data.tag == null || cmd_data.command == null
+                // Пропускаємо невалідні записи
+                if (cmd_data == null || cmd_data.tag == null || cmd_data.command == null
                     || cmd_data.tag.length == 0 || cmd_data.command.length == 0) {
                     continue;
                 }
 
                 string tag = cmd_data.tag;
 
-                // Перевіряємо, чи цей тег ще існує в рядку (можливо, його замінив вбудований тег)
+                // Перевіряємо, чи цей тег ще існує в рядку
                 if (!processed_text.contains(tag)) {
                     continue;
                 }
 
+                // Беремо оригінальний рядок команди від користувача
                 string command_str = cmd_data.command;
                 string replacement_text = ""; // Текст для заміни тега
 
-                // Виконуємо команду синхронно
+                // Виконуємо команду синхронно через оболонку
                 try {
-                    string[] argv = {};
-                    // Парсимо рядок команди на аргументи
-                    if (!GLib.Shell.parse_argv(command_str, out argv)) {
-                        throw new Error(Quark.from_string("SHELL"), 1, "Failed to parse command: " + command_str);
-                    }
+                    // !!! ВИДАЛЕНО парсинг через Shell.parse_argv !!!
+                    // string[] argv = {};
+                    // if (!GLib.Shell.parse_argv(command_str, out argv)) {
+                    //     throw new Error(Quark.from_string("SHELL"), 1, "Failed to parse command: " + command_str);
+                    // }
 
                     string standard_output;
                     string standard_error;
                     int exit_status;
 
-                    // Запускаємо процес
-                    // Це блокуючий виклик! Якщо команда виконується довго, панель може "зависнути".
-                    GLib.Process.spawn_sync(
-                        null,       // Робоча директорія (поточна)
-                        argv,       // Масив аргументів
-                        null,       // Змінні середовища (успадковуються)
-                        GLib.SpawnFlags.SEARCH_PATH, // Шукати команду в PATH
-                        null,       // Функція налаштування дочірнього процесу
-                        out standard_output, // Сюди запишеться stdout
-                        out standard_error,  // Сюди запишеться stderr
-                        out exit_status      // Сюди запишеться код виходу
+                    // !!! ЗАМІНЕНО виклик на spawn_command_line_sync !!!
+                    // Запускаємо команду через оболонку (/bin/sh), яка обробить '~' та інше
+                    string shell_cmd = "/bin/sh -c " + GLib.Shell.quote(command_str);
+                    bool success = GLib.Process.spawn_command_line_sync(
+                        shell_cmd,
+                        out standard_output,
+                        out standard_error,
+                        out exit_status
                     );
 
-                    // Аналізуємо результат
+                    // Перевіряємо, чи вдалося запустити саму оболонку/команду
+                    if (!success) {
+                        // Якщо spawn_command_line_sync повернула false, сталася помилка запуску
+                        // GError буде встановлено автоматично функцією
+                        throw new SpawnError.FAILED("GLib.Process.spawn_command_line_sync failed for: " + command_str);
+                    }
+
+                    // Аналізуємо результат виконання САМОЇ КОМАНДИ (exit_status)
                     if (exit_status != 0) {
-                        // Якщо помилка, показуємо код помилки
                         replacement_text = "[ERR:%d]".printf(exit_status);
-                        // Виводимо stderr в консоль панелі для діагностики
                         if (standard_error != null && standard_error.length > 0) {
-                            stderr.printf("Cmd '%s' err (exit %d): %s\n", command_str, exit_status, standard_error.strip());
+                            stderr.printf("Cmd '%s' shell err (exit %d): %s\n", command_str, exit_status, standard_error.strip());
                         } else {
-                            stderr.printf("Cmd '%s' failed with exit %d (no stderr)\n", command_str, exit_status);
+                            stderr.printf("Cmd '%s' shell failed with exit %d (no stderr)\n", command_str, exit_status);
                         }
                     } else if (standard_output != null) {
-                        // Якщо успішно, використовуємо stdout (прибираємо зайві пробіли/переноси)
                         replacement_text = standard_output.strip();
                     } else {
-                        // Якщо stdout порожній, замінюємо на порожній рядок
                         replacement_text = "";
                     }
 
-                } catch (SpawnError e) { // Помилка запуску процесу
-                     stderr.printf("Failed to spawn cmd '%s': %s\n", command_str, e.message);
-                     replacement_text = "[SPAWN ERR]";
-                } catch (Error e) { // Інші помилки (напр., парсингу команди)
-                     stderr.printf("Error processing cmd '%s': %s\n", command_str, e.message);
-                     replacement_text = "[PROC ERR]";
+                } catch (SpawnError e) { // Ловимо помилки, кинуті spawn_command_line_sync АБО нашим throw
+                    stderr.printf("Failed to spawn shell for cmd '%s': %s\n", command_str, e.message);
+                    replacement_text = "[SPAWN ERR]";
+                } catch (Error e) { // Ловимо інші (малоймовірні) помилки
+                    stderr.printf("Unexpected error processing cmd '%s': %s\n", command_str, e.message);
+                    replacement_text = "[PROC ERR]";
                 }
 
                 // Замінюємо тег результатом
                 processed_text = processed_text.replace(tag, replacement_text);
-            }
+            } // Кінець foreach
 
 
             // --- ОНОВЛЕННЯ МІТКИ НА ПАНЕЛІ ---

@@ -94,7 +94,7 @@ namespace SysMonitor {
 
 
             // --- Блок Користувацьких команд ---
-            var custom_commands_label = new Gtk.Label(_("<b>User tags:</b>"));
+            var custom_commands_label = new Gtk.Label(_("<b>User Tags:</b>"));
             custom_commands_label.use_markup = true;
             custom_commands_label.xalign = 0;
             main_box.pack_start(custom_commands_label, false, false, 5);
