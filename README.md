@@ -79,7 +79,7 @@ MIT License (See LICENSE file for full text)
 
 </details>
 -----
-<details>
+
 <summary>🇺🇦 Українська версія</summary>
 
 ## Budgie SysMonitor Applet
