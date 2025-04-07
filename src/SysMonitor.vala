@@ -54,32 +54,47 @@ namespace SysMonitor {
             // !!! ВИПРАВЛЕНА ІНІЦІАЛІЗАЦІЯ Gettext (версія 3) !!!
             try {
                 // 1. Встановлюємо локаль з системних налаштувань
-                string? current_locale = Intl.setlocale (LocaleCategory.ALL, "");
+                string? current_locale = Intl.setlocale(LocaleCategory.ALL, "");
                 stdout.printf("Gettext: Locale set to %s\n", current_locale ?? "(null)");
-
+            
                 // 2. Визначаємо шлях до .mo файлів
-                string? data_home = Environment.get_user_data_dir (); // -> ~/.local/share
+                string? data_home = Environment.get_user_data_dir(); // -> ~/.local/share
                 string localedir_user = "";
                 string localedir_system = "/usr/share/locale"; // Стандартний системний
                 string final_localedir;
-
+            
                 // Формуємо шлях до користувацької директорії локалей
                 if (data_home != null) {
                     localedir_user = GLib.Path.build_filename(data_home, "locale");
                 }
-
-                // Перевіряємо, чи існує користувацька директорія локалей
-                // І використовуємо її, якщо вона існує
-                if (localedir_user != "" && FileUtils.test(localedir_user, FileTest.IS_DIR)) {
-                    final_localedir = localedir_user;
+            
+                // Перевіряємо наявність файлу перекладу в користувацькій директорії
+                string mo_path_user = "";
+                if (localedir_user != "") {
+                    mo_path_user = GLib.Path.build_filename(localedir_user, "uk", "LC_MESSAGES", GETTEXT_PACKAGE + ".mo");
                 }
-                // В іншому випадку використовуємо системний шлях
+            
+                // Перевіряємо наявність файлу перекладу в системній директорії
+                string mo_path_system = GLib.Path.build_filename(localedir_system, "uk", "LC_MESSAGES", GETTEXT_PACKAGE + ".mo");
+            
+                // Спочатку перевіряємо користувацький файл
+                if (mo_path_user != "" && FileUtils.test(mo_path_user, FileTest.EXISTS)) {
+                    final_localedir = localedir_user;
+                    stdout.printf("Gettext: Found user locale file at %s\n", mo_path_user);
+                }
+                // Потім перевіряємо системний файл
+                else if (FileUtils.test(mo_path_system, FileTest.EXISTS)) {
+                    final_localedir = localedir_system;
+                    stdout.printf("Gettext: Found system locale file at %s\n", mo_path_system);
+                }
+                // Якщо не знайдено, використовуємо системний шлях
                 else {
                     final_localedir = localedir_system;
+                    stdout.printf("Gettext: No locale files found, defaulting to system path\n");
                 }
-
+            
                 stdout.printf("Gettext: Binding textdomain '%s' to dir '%s'\n", GETTEXT_PACKAGE, final_localedir);
-
+            
                 // 3. Прив'язуємо текстовий домен до знайденої директорії
                 Intl.bindtextdomain(GETTEXT_PACKAGE, final_localedir);
                 // 4. Вказуємо кодування (зазвичай UTF-8)
@@ -87,7 +102,7 @@ namespace SysMonitor {
                 // 5. Активуємо наш текстовий домен
                 Intl.textdomain(GETTEXT_PACKAGE);
                 stdout.printf("Gettext initialized for domain '%s'.\n", GETTEXT_PACKAGE);
-
+            
             } catch (Error e) {
                 printerr("Error initializing Gettext: %s\n", e.message);
             }

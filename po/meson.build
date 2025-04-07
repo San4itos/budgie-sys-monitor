@@ -10,6 +10,9 @@ msgfmt = find_program('msgfmt', required : true)
 msgmerge = find_program('msgmerge', required : true)
 msginit = find_program('msginit', required : true)
 
+# Використовуємо глобальну змінну localedir з основного meson.build
+locale_install_dir = localedir
+
 # Генеруємо pot файл
 vala_files_for_pot = files(potfiles_sources_paths) # Створюємо об'єкти файлів Vala
 pot_target = custom_target(domain + '.pot',
@@ -67,16 +70,14 @@ foreach lang : langs
             '@INPUT@'
         ],
         install: true,
-        install_dir: join_paths(get_option('prefix'), get_option('datadir'), 'locale', lang, 'LC_MESSAGES'),
+        install_dir: join_paths(locale_install_dir, lang, 'LC_MESSAGES'),
         build_by_default: true
     )
 endforeach
 
 if po_targets.length() > 0 # Перевірка, що список цілей не порожній
     run_target('update-po',
-        # !!! ПОВЕРТАЄМО просту команду echo !!!
         command: ['echo', 'Manual PO update/init targets triggered.'],
-        # Залежність від цілей оновлення/ініціалізації
         depends: po_targets
     )
 endif
