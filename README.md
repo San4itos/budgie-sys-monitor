@@ -1,3 +1,7 @@
+## Budgie SysMonitor Applet
+System monitor applet for Budgie panel written in Vala with Gemini, Grok, Claude and ChatGPT.
+
+![Main window](screenshots/Snapshot_1.png)
 
 <summary>🇬🇧 English Version</summary>
 
@@ -5,12 +9,10 @@
 
 A simple and configurable system monitor applet for the Budgie Desktop. Displays system info using built-in tags and custom shell commands.
 
+<details>
 ![Settings window](screenshots/Snapshot_en.png)
 
 <!-- ![Screenshot](screenshot.png) -->
-
-<details>
-
 ### Features
 
 *   Customizable text template for displaying data.
@@ -78,20 +80,19 @@ Left-click the applet to open settings. You can change the text template, refres
 MIT License (See LICENSE file for full text)
 
 </details>
------
+
+---
 
 <summary>🇺🇦 Українська версія</summary>
 
 ## Budgie SysMonitor Applet
 
-Простий та конфігурований аплет системного моніторингу для стільничного середовища Budgie. Відображає системну інформацію за допомогою вбудованих тегів та користувацьких команд.
+Простий та конфігурований аплет системного моніторингу для Budgie DE. Відображає системну інформацію за допомогою вбудованих тегів та користувацьких команд.
 
+<details>
 ![Settings window](screenshots/Snapshot_uk.png)
 
 <!-- ![Screenshot](screenshot.png) -->
-
-<details>
-
 ### Можливості
 
 *   Налаштовуваний рядок для відображення даних.
