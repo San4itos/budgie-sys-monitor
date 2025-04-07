@@ -1,14 +1,15 @@
-<details>
+
 <summary>🇬🇧 English Version</summary>
 
 ## Budgie SysMonitor Applet
 
 A simple and configurable system monitor applet for the Budgie Desktop. Displays system info using built-in tags and custom shell commands.
 
-```
 ![Settings window](screenshots/Snapshot_en.png)
-```
+
 <!-- ![Screenshot](screenshot.png) -->
+
+<details>
 
 ### Features
 
@@ -85,10 +86,11 @@ MIT License (See LICENSE file for full text)
 
 Простий та конфігурований аплет системного моніторингу для стільничного середовища Budgie. Відображає системну інформацію за допомогою вбудованих тегів та користувацьких команд.
 
-```
 ![Settings window](screenshots/Snapshot_uk.png)
-```
+
 <!-- ![Screenshot](screenshot.png) -->
+
+<details>
 
 ### Можливості
 
