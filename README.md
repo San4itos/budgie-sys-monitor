@@ -10,6 +10,7 @@ System monitor applet for Budgie panel written in Vala with Gemini, Grok, Claude
 A simple and configurable system monitor applet for the Budgie Desktop. Displays system info using built-in tags and custom shell commands.
 
 <details>
+
 ![Settings window](screenshots/Snapshot_en.png)
 
 <!-- ![Screenshot](screenshot.png) -->
@@ -90,6 +91,7 @@ MIT License (See LICENSE file for full text)
 Простий та конфігурований аплет системного моніторингу для Budgie DE. Відображає системну інформацію за допомогою вбудованих тегів та користувацьких команд.
 
 <details>
+
 ![Settings window](screenshots/Snapshot_uk.png)
 
 <!-- ![Screenshot](screenshot.png) -->
