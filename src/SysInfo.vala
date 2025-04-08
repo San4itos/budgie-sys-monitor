@@ -12,7 +12,6 @@ namespace SysMonitor {
 
     // Клас для отримання системної інформації
     public class SysInfo : Object {
-
         // --- Статичні члени для збереження стану між викликами ---
         // Для CPU %
         private static float cpu_last_total = 0.0f;
@@ -218,7 +217,8 @@ namespace SysMonitor {
         }
 
         // --- Нестатичні методи (для внутрішнього використання або майбутніх функцій) ---
-        public SysInfo() { } // Порожній конструктор екземпляра
+        public SysInfo () {
+        }
 
         // Метод отримання кількості процесорів (може бути потрібен для get_cpu_frequency_khz)
         // Прибираємо CCode, бо VAPI для struct SysInfo має правильний cheader_filename
@@ -238,54 +238,131 @@ namespace SysMonitor {
             }
         }
 
-        // Метод отримання частоти CPU (не залежить від libgtop VAPI)
         public double get_cpu_frequency_khz() {
-           double total_freq_khz = 0.0;
-           int valid_cores_found = 0;
-           uint64 num_cpus = this.get_num_processors(); // Викликаємо нестатичний метод
-           if (num_cpus == 0) return 0.0;
-           int num_cpus_int = (int)num_cpus;
-           if (num_cpus_int < 1) num_cpus_int = 1;
-           for (int i = 0; i < num_cpus_int; i++) {
-               var cpuinfo_path = "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_cur_freq".printf(i);
-               try {
-                   string contents;
-                   if (FileUtils.get_contents(cpuinfo_path, out contents)) {
-                       double freq_khz = double.parse(contents.strip());
-                       total_freq_khz += freq_khz; valid_cores_found++;
-                   }
-               } catch (Error e) { /* Ignore */ }
-           }
-            double avg_freq_khz;
-            if (valid_cores_found > 0) {
-                 avg_freq_khz = total_freq_khz / valid_cores_found;
+            bool sysfs_success;
+            // Спробуємо основний, більш сучасний метод через SysFS
+            double freq = read_max_freq_from_sysfs(out sysfs_success);
+    
+            if (sysfs_success) {
+                // Успіх з /sys, повертаємо результат
+                return freq;
             } else {
-                 avg_freq_khz = read_freq_from_proc_cpuinfo(); // Резервний варіант
+                // Невдача з /sys, пробуємо резервний метод через ProcFS
+                bool proc_success; // Результат цієї змінної нам тут не потрібен
+                // Попередження про помилку /sys буде виведено всередині read_max_freq_from_sysfs (якщо є)
+                warning("Could not get frequency from SysFS, falling back to ProcFS.");
+                return read_max_freq_from_proc_cpuinfo(out proc_success);
             }
-           return avg_freq_khz;
         }
-
-        // Допоміжний метод читання частоти з /proc/cpuinfo (усереднення)
-        private double read_freq_from_proc_cpuinfo() {
-             double total_mhz = 0.0; int core_count = 0;
+    
+        // --- Приватні методи для читання частоти ---
+    
+        /**
+         * Читає поточні частоти з /sys/devices/system/cpu/cpuX/cpufreq/scaling_cur_freq
+         * і повертає максимальну знайдену в КГц.
+         * @param success Встановлюється в true, якщо вдалося прочитати хоча б одну частоту.
+         * @return Максимальна частота в КГц або 0.0 при помилці отримання кількості CPU.
+         */
+        private double read_max_freq_from_sysfs(out bool success) {
+            success = false;
+            double max_freq_khz_sys = 0.0;
+    
+            uint64 num_cpus = this.get_num_processors();
+            if (num_cpus == 0) {
+                // Попередження про помилку get_num_processors буде всередині самого методу
+                return 0.0; // Не можемо продовжити
+            }
+    
+            int num_cpus_int = (int)num_cpus;
+            if (num_cpus_int < 1) num_cpus_int = 1; // Про всяк випадок
+    
+            for (int i = 0; i < num_cpus_int; i++) {
+                var cpuinfo_path = "/sys/devices/system/cpu/cpu%d/cpufreq/scaling_cur_freq".printf(i);
+                try {
+                    string contents;
+                    // FileUtils.get_contents поверне false, якщо файл не існує або немає прав
+                    if (FileUtils.get_contents(cpuinfo_path, out contents)) {
+                        // Намагаємося розпарсити значення
+                        double current_freq_khz = double.parse(contents.strip());
+                        // Оновлюємо максимум
+                        if (current_freq_khz > max_freq_khz_sys) {
+                            max_freq_khz_sys = current_freq_khz;
+                        }
+                        // Позначаємо успіх, якщо хоча б одне ядро прочитано
+                        success = true;
+                    }
+                    // Якщо get_contents повернув false, мовчки ігноруємо (файл може бути відсутній для офлайн ядер)
+                } catch (Error e) {
+                    // Помилка парсингу або інша помилка GLib
+                    warning("Error reading/parsing SysFS frequency file %s: %s", cpuinfo_path, e.message);
+                    // Продовжуємо цикл, можливо, інші ядра вдасться прочитати
+                }
+            }
+            // Повертаємо знайдений максимум (буде 0.0, якщо success залишився false)
+            return max_freq_khz_sys;
+        }
+    
+        /**
+         * Читає частоти з /proc/cpuinfo (рядки 'cpu MHz')
+         * і повертає максимальну знайдену, переведену в КГц.
+         * Використовується як резервний метод.
+         * @param success Встановлюється в true, якщо вдалося прочитати і розпарсити хоча б одну частоту.
+         * @return Максимальна частота в КГц або 0.0 при помилці.
+         */
+        private double read_max_freq_from_proc_cpuinfo(out bool success) {
+             success = false;
+             double max_mhz = 0.0;
              var cpuinfo_path = "/proc/cpuinfo";
+             bool found_any_valid_line = false;
+    
               try {
                   string contents;
                   if (FileUtils.get_contents(cpuinfo_path, out contents)) {
                       foreach (var line in contents.split("\n")) {
+                          // Шукаємо рядки, що починаються з "cpu MHz"
                           if (line.has_prefix("cpu MHz")) {
                               var parts = line.split(":");
                               if (parts.length == 2) {
-                                  try { total_mhz += double.parse(parts[1].strip()); core_count++; }
-                                  catch (Error parse_err) { /* ignore */ }
+                                  try {
+                                      // Парсимо значення після двокрапки
+                                      string mhz_str = parts[1].strip();
+                                      var current_mhz = double.parse(mhz_str);
+                                      // Оновлюємо максимум
+                                      if (current_mhz > max_mhz) {
+                                          max_mhz = current_mhz;
+                                      }
+                                      // Відмічаємо, що хоч один рядок оброблено
+                                      found_any_valid_line = true;
+                                  }
+                                  catch (Error parse_err) {
+                                      // Помилка парсингу конкретного рядка, ігноруємо його
+                                      warning("Failed to parse ProcFS MHz value from line '%s': %s", line.strip(), parse_err.message);
+                                  }
                               }
                           }
                       }
+                      // Встановлюємо загальний успіх, якщо обробили хоча б один рядок
+                      if (found_any_valid_line) {
+                          success = true;
+                      } else {
+                          warning("No valid 'cpu MHz' lines found or parsed in %s", cpuinfo_path);
+                      }
+                  } else {
+                       // Помилка читання файлу /proc/cpuinfo
+                       warning("Could not read ProcFS fallback file: %s", cpuinfo_path);
+                       // success залишається false
+                       return 0.0;
                   }
-              } catch (Error e) { return 0.0; }
-              if (core_count > 0) { return (total_mhz / core_count) * 1000.0; }
-              else { return 0.0; }
-         }
-
+              } catch (Error e) {
+                    // Інша помилка при роботі з файлом
+                    warning("Error processing ProcFS fallback file %s: %s", cpuinfo_path, e.message);
+                    // success залишається false
+                    return 0.0;
+              }
+    
+              // Повертаємо максимальну знайдену частоту, переведену в КГц
+              return max_mhz * 1000.0;
+        }
+ 
     } // Кінець класу SysInfo
 } // Кінець namespace SysMonitor

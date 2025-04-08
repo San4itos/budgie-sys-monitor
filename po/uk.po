@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: sysmonitor 0.1.0\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-04-07 22:16+0300\n"
+"POT-Creation-Date: 2025-04-08 14:53+0300\n"
 "PO-Revision-Date: 2025-04-06 18:58+0300\n"
 "Last-Translator: Automatically generated\n"
 "Language-Team: none\n"
@@ -40,8 +40,9 @@ msgid "Swap Usage (%, libgtop)"
 msgstr "Використання Swap (%, libgtop)"
 
 #: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:26
-msgid "Avg CPU frequency (GHz, /sys)"
-msgstr "Сер. частота CPU (ГГц, /sys)"
+#, fuzzy
+msgid "CPU frequency, Max core (GHz, /sys)"
+msgstr "Частота CPU, Макс. з ядер (ГГц, /sys)"
 
 #: /home/san4itos/Загальне/Projects/sys_monitor/src/SysMonitorWindow.vala:27
 msgid "Download speed"

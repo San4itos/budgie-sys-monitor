@@ -23,7 +23,7 @@ namespace SysMonitor {
                 { "[CPU]",    _("CPU Usage (%, libgtop)") },
                 { "[MEM]",    _("Memory Usage (%, libgtop)") },
                 { "[SWAP]",   _("Swap Usage (%, libgtop)") },
-                { "[CPU_FREQ]", _("Avg CPU frequency (GHz, /sys)") },
+                { "[CPU_FREQ]", _("CPU frequency, Max core (GHz, /sys)") },
                 { "[DL]", _("Download speed") },
                 { "[UP]", _("Upload speed") }
                 // Додавай сюди інші за потреби

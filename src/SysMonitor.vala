@@ -139,7 +139,7 @@ namespace SysMonitor {
             // Підключаємо обробник кліку по аплету
             widget.button_press_event.connect(on_button_press);
             // Запускаємо таймер оновлення
-            start_or_restart_timer();
+            start_or_restart_timer(true);
 
             // Додаємо віджет до аплету та показуємо все
             this.add(widget);
